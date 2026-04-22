@@ -20,10 +20,37 @@ export function useDirectExecution(
   config: DirectExecutionPluginConfig,
 ): Plugin {
   return {
-    onRequest: async ({ endResponse, serverContext }) => {
+    onRequest: async ({ endResponse, serverContext, request }) => {
       const req = (serverContext as unknown as { req: Request }).req;
 
-      if (!req.body?.query) {
+      let requestBody = req.body as
+        | {
+            query?: string;
+            operationName?: string;
+            variables?: Record<string, unknown>;
+          }
+        | undefined;
+
+      if (!isNonEmptyString(requestBody?.query)) {
+        try {
+          const parsedBody = (await request.clone().json()) as
+            | {
+                query?: string;
+                operationName?: string;
+                variables?: Record<string, unknown>;
+              }
+            | undefined;
+
+          if (isNonEmptyString(parsedBody?.query)) {
+            requestBody = parsedBody;
+            req.body = parsedBody;
+          }
+        } catch {
+          // Keep legacy behavior when body is not a JSON GraphQL payload.
+        }
+      }
+
+      if (!isNonEmptyString(requestBody?.query)) {
         return;
       }
 
@@ -51,8 +78,8 @@ export function useDirectExecution(
         return;
       }
 
-      const queryString = req.body.query as string;
-      const operationName = req.body.operationName as string | undefined;
+      const queryString = requestBody.query;
+      const operationName = requestBody.operationName;
 
       let document: DocumentNode;
       try {
