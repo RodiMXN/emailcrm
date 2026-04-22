@@ -1,9 +1,9 @@
 import * as Sentry from '@sentry/node';
 import { type Request } from 'express';
-import { DocumentNode, parse } from 'graphql';
+import { DocumentNode, GraphQLError, parse } from 'graphql';
 import { type Plugin } from 'graphql-yoga';
 
-import { isNull } from '@sniptt/guards';
+import { isNonEmptyString, isNull } from '@sniptt/guards';
 import { type DirectExecutionService } from 'src/engine/api/graphql/direct-execution/direct-execution.service';
 import { classifyTopLevelFields } from 'src/engine/api/graphql/direct-execution/utils/classify-top-level-fields.util';
 import { findOperationDefinition } from 'src/engine/api/graphql/direct-execution/utils/find-operation-definition.util';
@@ -23,7 +23,31 @@ export function useDirectExecution(
     onRequest: async ({ endResponse, serverContext }) => {
       const req = (serverContext as unknown as { req: Request }).req;
 
-      if (!req.workspace?.id || !req.body?.query) {
+      if (!req.body?.query) {
+        return;
+      }
+
+      const hasWorkspaceIntentHeader = isNonEmptyString(
+        req.headers['x-schema-version'] as string | undefined,
+      );
+      const hasAuthorizationHeader = isNonEmptyString(
+        req.headers.authorization,
+      );
+
+      if (
+        !req.workspace?.id &&
+        (hasWorkspaceIntentHeader || hasAuthorizationHeader)
+      ) {
+        const error = new GraphQLError('Workspace context is missing', {
+          extensions: {
+            code: 'UNAUTHENTICATED',
+          },
+        });
+
+        return endResponse(Response.json({ errors: [error.toJSON()] }));
+      }
+
+      if (!req.workspace?.id) {
         return;
       }
 
