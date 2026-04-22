@@ -69,11 +69,21 @@ export const useApolloFactory = (options: Partial<Options> = {}) => {
       onTokenPairChange: (tokenPair) => {
         setInMemoryTokenPair(tokenPair);
         cookieStorage.setItem('tokenPair', JSON.stringify(tokenPair));
+        try {
+          localStorage.setItem('tokenPair', JSON.stringify(tokenPair));
+        } catch {
+          // ignore localStorage persistence errors
+        }
         setTokenPair(tokenPair);
       },
       onUnauthenticatedError: () => {
         setInMemoryTokenPair(undefined);
         cookieStorage.removeItem('tokenPair');
+        try {
+          localStorage.removeItem('tokenPair');
+        } catch {
+          // ignore localStorage cleanup errors
+        }
         setTokenPair(null);
         setCurrentUser(null);
         setCurrentWorkspaceMember(null);

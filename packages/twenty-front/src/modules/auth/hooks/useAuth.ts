@@ -157,6 +157,11 @@ export const useAuth = () => {
     store.set(tokenPairState.atom, null);
     setInMemoryTokenPair(undefined);
     cookieStorage.removeItem('tokenPair');
+    try {
+      localStorage.removeItem('tokenPair');
+    } catch {
+      // ignore localStorage cleanup errors
+    }
     store.set(currentUserState.atom, null);
     store.set(currentWorkspaceState.atom, null);
     store.set(currentUserWorkspaceState.atom, null);
@@ -188,6 +193,11 @@ export const useAuth = () => {
     (tokens: AuthTokenPair) => {
       setInMemoryTokenPair(tokens);
       cookieStorage.setItem('tokenPair', JSON.stringify(tokens));
+      try {
+        localStorage.setItem('tokenPair', JSON.stringify(tokens));
+      } catch {
+        // ignore localStorage persistence errors
+      }
       setTokenPair(tokens);
     },
     [setTokenPair],

@@ -4,6 +4,15 @@ import { cookieStorage } from '~/utils/cookie-storage';
 import { isValidAuthTokenPair } from './isValidAuthTokenPair';
 
 let inMemoryTokenPair: AuthTokenPair | undefined;
+const TOKEN_PAIR_LOCAL_STORAGE_KEY = 'tokenPair';
+
+const readTokenPairFromLocalStorage = (): string | undefined => {
+  try {
+    return localStorage.getItem(TOKEN_PAIR_LOCAL_STORAGE_KEY) ?? undefined;
+  } catch {
+    return undefined;
+  }
+};
 
 export const setInMemoryTokenPair = (
   tokenPair: AuthTokenPair | null | undefined,
@@ -28,7 +37,8 @@ export const getTokenPair = (): AuthTokenPair | undefined => {
     return inMemoryTokenPair;
   }
 
-  const stringTokenPair = cookieStorage.getItem('tokenPair');
+  const stringTokenPair =
+    cookieStorage.getItem('tokenPair') ?? readTokenPairFromLocalStorage();
 
   if (!isDefined(stringTokenPair)) {
     // oxlint-disable-next-line no-console
