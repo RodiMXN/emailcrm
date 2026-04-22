@@ -41,7 +41,7 @@ const logger = loggerLink(() => 'Twenty');
 // Shared across all ApolloFactory instances so concurrent
 // UNAUTHENTICATED errors from /graphql and /metadata clients
 // deduplicate into a single renewal request.
-let renewalPromise: Promise<boolean> | null = null;
+let renewalPromise: Promise<AuthTokenPair | null> | null = null;
 
 const TOKEN_RENEWAL_MAX_RETRIES = 3;
 const TOKEN_RENEWAL_RETRY_DELAY_MS = 1000;
@@ -159,7 +159,7 @@ export class ApolloFactory implements ApolloManager {
         },
       });
 
-      const attemptTokenRenewal = async (): Promise<void> => {
+      const attemptTokenRenewal = async (): Promise<AuthTokenPair | null> => {
         const graphqlUri = `${REACT_APP_SERVER_BASE_URL}/metadata`;
 
         const tokens = await retryWithBackoff(
@@ -174,7 +174,11 @@ export class ApolloFactory implements ApolloManager {
 
         if (isDefined(tokens)) {
           onTokenPairChange?.(tokens);
+
+          return tokens;
         }
+
+        return null;
       };
 
       const handleTokenRenewal = (
@@ -189,7 +193,6 @@ export class ApolloFactory implements ApolloManager {
 
         if (!renewalPromise) {
           renewalPromise = attemptTokenRenewal()
-            .then(() => true)
             .catch(() => {
               // oxlint-disable-next-line no-console
               console.log(
@@ -197,7 +200,7 @@ export class ApolloFactory implements ApolloManager {
               );
               onUnauthenticatedError?.();
 
-              return false;
+              return null;
             })
             .finally(() => {
               renewalPromise = null;
@@ -205,7 +208,20 @@ export class ApolloFactory implements ApolloManager {
         }
 
         return from(renewalPromise).pipe(
-          switchMap((succeeded) => (succeeded ? forward(operation) : EMPTY)),
+          switchMap((renewedTokenPair) => {
+            if (!isDefined(renewedTokenPair)) {
+              return EMPTY;
+            }
+
+            operation.setContext(({ headers = {} }) => ({
+              headers: {
+                ...headers,
+                authorization: `Bearer ${renewedTokenPair.accessOrWorkspaceAgnosticToken.token}`,
+              },
+            }));
+
+            return forward(operation);
+          }),
         );
       };
 
