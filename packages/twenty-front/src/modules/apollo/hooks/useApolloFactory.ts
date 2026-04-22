@@ -3,6 +3,7 @@ import { useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { ApolloFactory, type Options } from '@/apollo/services/apollo.factory';
+import { setInMemoryTokenPair } from '@/apollo/utils/getTokenPair';
 import { currentUserState } from '@/auth/states/currentUserState';
 import { currentUserWorkspaceState } from '@/auth/states/currentUserWorkspaceState';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
@@ -66,10 +67,12 @@ export const useApolloFactory = (options: Partial<Options> = {}) => {
       currentTokenPair: tokenPair,
       appVersion,
       onTokenPairChange: (tokenPair) => {
+        setInMemoryTokenPair(tokenPair);
         cookieStorage.setItem('tokenPair', JSON.stringify(tokenPair));
         setTokenPair(tokenPair);
       },
       onUnauthenticatedError: () => {
+        setInMemoryTokenPair(undefined);
         cookieStorage.removeItem('tokenPair');
         setTokenPair(null);
         setCurrentUser(null);
@@ -145,6 +148,8 @@ export const useApolloFactory = (options: Partial<Options> = {}) => {
     if (isDefined(apolloRef.current)) {
       apolloRef.current.updateTokenPair(tokenPair);
     }
+
+    setInMemoryTokenPair(tokenPair);
   }, [tokenPair]);
 
   return apolloClient;

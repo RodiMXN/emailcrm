@@ -26,6 +26,7 @@ import { clearSessionLocalStorageKeys } from '@/auth/utils/clearSessionLocalStor
 import { broadcastSignOutToOtherTabs } from '@/auth/utils/crossTabSignOut';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
+import { setInMemoryTokenPair } from '@/apollo/utils/getTokenPair';
 
 import { isAppEffectRedirectEnabledState } from '@/app/states/isAppEffectRedirectEnabledState';
 import { availableWorkspacesState } from '@/auth/states/availableWorkspacesState';
@@ -154,6 +155,7 @@ export const useAuth = () => {
     store.set(lastAuthenticatedMethodState.atom, lastAuthenticatedMethod);
 
     store.set(tokenPairState.atom, null);
+    setInMemoryTokenPair(undefined);
     cookieStorage.removeItem('tokenPair');
     store.set(currentUserState.atom, null);
     store.set(currentWorkspaceState.atom, null);
@@ -184,6 +186,7 @@ export const useAuth = () => {
 
   const handleSetAuthTokens = useCallback(
     (tokens: AuthTokenPair) => {
+      setInMemoryTokenPair(tokens);
       cookieStorage.setItem('tokenPair', JSON.stringify(tokens));
       setTokenPair(tokens);
     },
