@@ -418,7 +418,16 @@ export const useAuth = () => {
               );
             }
 
-            return setSignInUpStep(SignInUpStep.WorkspaceSelection);
+            const fallbackLoginTokenResult =
+              await handleGetLoginTokenFromCredentials(
+                email,
+                password,
+                captchaToken,
+              );
+
+            return await handleGetAuthTokensFromLoginToken(
+              fallbackLoginTokenResult.loginToken.token,
+            );
           }
 
           setSignInUpStep(SignInUpStep.WorkspaceSelection);
