@@ -51,6 +51,23 @@ export function useDirectExecution(
       }
 
       if (!isNonEmptyString(requestBody?.query)) {
+        const queryFromSearchParams = new URL(request.url).searchParams.get(
+          'query',
+        );
+        const operationNameFromSearchParams = new URL(
+          request.url,
+        ).searchParams.get('operationName');
+
+        if (isNonEmptyString(queryFromSearchParams)) {
+          requestBody = {
+            query: queryFromSearchParams,
+            operationName: operationNameFromSearchParams ?? undefined,
+          };
+          req.body = requestBody;
+        }
+      }
+
+      if (!isNonEmptyString(requestBody?.query)) {
         return;
       }
 
