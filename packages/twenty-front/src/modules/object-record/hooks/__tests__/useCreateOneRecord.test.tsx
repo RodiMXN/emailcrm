@@ -30,7 +30,7 @@ const mocks = [
     },
     result: jest.fn(() => ({
       data: {
-        createPerson: { ...responseData, ...input, id: personId },
+        createOnePerson: { ...responseData, ...input, id: personId },
       },
     })),
   },
