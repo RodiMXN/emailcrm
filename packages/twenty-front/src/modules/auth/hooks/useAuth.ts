@@ -382,16 +382,27 @@ export const useAuth = () => {
             const targetWorkspace = getFirstAvailableWorkspaces(
               user.availableWorkspaces,
             );
-            return await redirectToWorkspaceDomain(
-              getWorkspaceUrl(targetWorkspace.workspaceUrls),
-              targetWorkspace.loginToken ? AppPath.Verify : AppPath.SignInUp,
-              {
-                ...(targetWorkspace.loginToken && {
-                  loginToken: targetWorkspace.loginToken,
-                }),
-                email: user.email,
-              },
-            );
+
+            if (isMultiWorkspaceEnabled) {
+              return await redirectToWorkspaceDomain(
+                getWorkspaceUrl(targetWorkspace.workspaceUrls),
+                targetWorkspace.loginToken ? AppPath.Verify : AppPath.SignInUp,
+                {
+                  ...(targetWorkspace.loginToken && {
+                    loginToken: targetWorkspace.loginToken,
+                  }),
+                  email: user.email,
+                },
+              );
+            }
+
+            if (isDefined(targetWorkspace.loginToken)) {
+              return await handleGetAuthTokensFromLoginToken(
+                targetWorkspace.loginToken,
+              );
+            }
+
+            return setSignInUpStep(SignInUpStep.WorkspaceSelection);
           }
 
           setSignInUpStep(SignInUpStep.WorkspaceSelection);
@@ -411,6 +422,8 @@ export const useAuth = () => {
       redirectToWorkspaceDomain,
       signIn,
       loadCurrentUser,
+      isMultiWorkspaceEnabled,
+      handleGetAuthTokensFromLoginToken,
       setSearchParams,
       setSignInUpStep,
       createWorkspace,
