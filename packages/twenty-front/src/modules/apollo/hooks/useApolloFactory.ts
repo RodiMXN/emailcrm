@@ -27,6 +27,7 @@ export const useApolloFactory = (options: Partial<Options> = {}) => {
 
   const navigate = useNavigate();
   const setTokenPair = useSetAtomState(tokenPairState);
+  const tokenPair = useAtomStateValue(tokenPairState);
   const [currentWorkspace, setCurrentWorkspace] = useAtomState(
     currentWorkspaceState,
   );
@@ -61,6 +62,7 @@ export const useApolloFactory = (options: Partial<Options> = {}) => {
       devtools: { enabled: process.env.IS_DEBUG_MODE === 'true' },
       currentWorkspaceMember: currentWorkspaceMember,
       currentWorkspace: currentWorkspace,
+      currentTokenPair: tokenPair,
       appVersion,
       onTokenPairChange: (tokenPair) => {
         setTokenPair(tokenPair);
@@ -135,6 +137,12 @@ export const useApolloFactory = (options: Partial<Options> = {}) => {
       apolloRef.current.updateAppVersion(appVersion);
     }
   }, [appVersion]);
+
+  useUpdateEffect(() => {
+    if (isDefined(apolloRef.current)) {
+      apolloRef.current.updateTokenPair(tokenPair);
+    }
+  }, [tokenPair]);
 
   return apolloClient;
 };

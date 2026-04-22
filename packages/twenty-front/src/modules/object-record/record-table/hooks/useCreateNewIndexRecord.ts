@@ -83,6 +83,8 @@ export const useCreateNewIndexRecord = ({
         ...recordInputFromFilters,
         ...recordInput,
       };
+      const { position: createdRecordPosition, ...createRecordInput } =
+        mergedRecordInput;
 
       const recordIndexOpenRecordIn = store.get(
         recordIndexOpenRecordInState.atom,
@@ -90,7 +92,7 @@ export const useCreateNewIndexRecord = ({
 
       const createdRecord = await createOneRecord({
         id: recordId,
-        ...mergedRecordInput,
+        ...createRecordInput,
       });
 
       if (
@@ -137,7 +139,7 @@ export const useCreateNewIndexRecord = ({
             recordIndexRecordIdsByGroupCallbackState(recordGroup.id),
           );
 
-          if (recordInput?.position === 'first') {
+          if (createdRecordPosition === 'first') {
             const newRecordIds = [createdRecord.id, ...currentRecordIds];
 
             store.set(
