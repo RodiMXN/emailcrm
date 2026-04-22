@@ -23,6 +23,53 @@ export function useDirectExecution(
     onRequest: async ({ endResponse, serverContext, request }) => {
       const req = (serverContext as unknown as { req: Request }).req;
 
+      const readRequestBodyFromRawString = (
+        rawBody: string,
+      ):
+        | {
+            query?: string;
+            operationName?: string;
+            variables?: Record<string, unknown>;
+          }
+        | undefined => {
+        if (!isNonEmptyString(rawBody)) {
+          return undefined;
+        }
+
+        const trimmedRawBody = rawBody.trim();
+
+        try {
+          const parsedJsonBody = JSON.parse(trimmedRawBody) as {
+            query?: string;
+            operationName?: string;
+            variables?: Record<string, unknown>;
+          };
+
+          if (isNonEmptyString(parsedJsonBody?.query)) {
+            return parsedJsonBody;
+          }
+        } catch {
+          // The raw body is not JSON. Continue with other parsing strategies.
+        }
+
+        const searchParams = new URLSearchParams(trimmedRawBody);
+        const queryFromUrlEncodedBody = searchParams.get('query');
+
+        if (isNonEmptyString(queryFromUrlEncodedBody)) {
+          const operationNameFromUrlEncodedBody =
+            searchParams.get('operationName');
+
+          return {
+            query: queryFromUrlEncodedBody,
+            operationName: operationNameFromUrlEncodedBody ?? undefined,
+          };
+        }
+
+        return {
+          query: trimmedRawBody,
+        };
+      };
+
       let requestBody = req.body as
         | {
             query?: string;
@@ -30,6 +77,11 @@ export function useDirectExecution(
             variables?: Record<string, unknown>;
           }
         | undefined;
+
+      if (!isNonEmptyString(requestBody?.query) && isNonEmptyString(req.body)) {
+        requestBody = readRequestBodyFromRawString(req.body);
+        req.body = requestBody;
+      }
 
       if (!isNonEmptyString(requestBody?.query)) {
         try {
@@ -46,7 +98,18 @@ export function useDirectExecution(
             req.body = parsedBody;
           }
         } catch {
-          // Keep legacy behavior when body is not a JSON GraphQL payload.
+          try {
+            const parsedRawBody = readRequestBodyFromRawString(
+              await request.clone().text(),
+            );
+
+            if (isNonEmptyString(parsedRawBody?.query)) {
+              requestBody = parsedRawBody;
+              req.body = parsedRawBody;
+            }
+          } catch {
+            // Keep legacy behavior when body is not a parseable GraphQL payload.
+          }
         }
       }
 
