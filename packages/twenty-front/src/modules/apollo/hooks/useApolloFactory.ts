@@ -128,10 +128,17 @@ export const useApolloFactory = (options: Partial<Options> = {}) => {
     return apolloRef.current.getClient();
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [
+    tokenPair,
+    currentWorkspace,
+    currentWorkspaceMember,
+    appVersion,
+    navigate,
+    location,
     setTokenPair,
     setCurrentUser,
     setCurrentWorkspaceMember,
     setCurrentWorkspace,
+    setCurrentUserWorkspace,
     setReturnToPath,
     enqueueErrorSnackBar,
   ]);
