@@ -135,6 +135,7 @@ export class RenewTokenService {
     workspaceId,
     targetedTokenType,
     userId,
+    preferredWorkspaceId,
   }: {
     workspaceId?: string;
     targetedTokenType: JwtTokenTypeEnum;
