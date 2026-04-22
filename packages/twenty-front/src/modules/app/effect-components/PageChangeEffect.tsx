@@ -7,6 +7,7 @@ import { isAppEffectRedirectEnabledState } from '@/app/states/isAppEffectRedirec
 import { ONBOARDING_PATHS } from '@/auth/constants/OnboardingPaths';
 import { ONGOING_USER_CREATION_PATHS } from '@/auth/constants/OngoingUserCreationPaths';
 import { useReturnToPath } from '@/auth/hooks/useReturnToPath';
+import { returnToPathState } from '@/auth/states/returnToPathState';
 import { useRequestFreshCaptchaToken } from '@/captcha/hooks/useRequestFreshCaptchaToken';
 import { isCaptchaScriptLoadedState } from '@/captcha/states/isCaptchaScriptLoadedState';
 import { isCaptchaRequiredForPath } from '@/captcha/utils/isCaptchaRequiredForPath';
@@ -22,6 +23,8 @@ import { useActiveRecordBoardCard } from '@/object-record/record-board/hooks/use
 import { useFocusedRecordBoardCard } from '@/object-record/record-board/hooks/useFocusedRecordBoardCard';
 import { useResetRecordBoardSelection } from '@/object-record/record-board/hooks/useResetRecordBoardSelection';
 import { useResetFocusStackToRecordIndex } from '@/object-record/record-index/hooks/useResetFocusStackToRecordIndex';
+import { useDefaultHomePagePath } from '@/navigation/hooks/useDefaultHomePagePath';
+import { lastVisitedObjectMetadataItemIdState } from '@/navigation/states/lastVisitedObjectMetadataItemIdState';
 import { useResetTableRowSelection } from '@/object-record/record-table/hooks/internal/useResetTableRowSelection';
 import { useActiveRecordTableRow } from '@/object-record/record-table/hooks/useActiveRecordTableRow';
 import { useFocusedRecordTableRow } from '@/object-record/record-table/hooks/useFocusedRecordTableRow';
@@ -45,6 +48,7 @@ import { AppBasePath, AppPath, SidePanelPages } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 import { AnalyticsType } from '~/generated-metadata/graphql';
 import { usePageChangeEffectNavigateLocation } from '~/hooks/usePageChangeEffectNavigateLocation';
+import { isOutboundCrmV1UiMode } from '@/app/constants/isOutboundCrmV1UiMode';
 import { getPageLayoutIdForLocation } from '~/modules/app/utils/getPageLayoutIdForLocation';
 import { useInitializeQueryParamState } from '~/modules/app/hooks/useInitializeQueryParamState';
 import { isMatchingLocation } from '~/utils/isMatchingLocation';
@@ -65,6 +69,11 @@ export const PageChangeEffect = () => {
   const [previousLocation, setPreviousLocation] = useState('');
 
   const location = useLocation();
+  const returnToPath = useAtomStateValue(returnToPathState);
+  const lastVisitedObjectMetadataItemId = useAtomStateValue(
+    lastVisitedObjectMetadataItemIdState,
+  );
+  const { defaultHomePagePath } = useDefaultHomePagePath();
 
   const pageChangeEffectNavigateLocation =
     usePageChangeEffectNavigateLocation();
@@ -176,6 +185,17 @@ export const PageChangeEffect = () => {
 
       const consumedReturnToPath =
         getReturnToPath() === pageChangeEffectNavigateLocation;
+
+      // TEMP DEBUG: remove after landing-flow investigation is complete.
+      // oxlint-disable-next-line no-console
+      console.warn('OUTBOUND_DEBUG_HIT_PAGE_CHANGE', {
+        pathname: location.pathname,
+        resolvedReturnToPath: getReturnToPath() ?? returnToPath,
+        lastVisitedObjectMetadataItemId,
+        defaultHomePagePath,
+        isOutboundCrmV1UiMode,
+        target: pageChangeEffectNavigateLocation,
+      });
 
       navigate(pageChangeEffectNavigateLocation);
 

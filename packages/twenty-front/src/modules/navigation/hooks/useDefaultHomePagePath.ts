@@ -1,4 +1,5 @@
 import { currentUserState } from '@/auth/states/currentUserState';
+import { isOutboundCrmV1UiMode } from '@/app/constants/isOutboundCrmV1UiMode';
 import { lastVisitedObjectMetadataItemIdState } from '@/navigation/states/lastVisitedObjectMetadataItemIdState';
 import { type ObjectPathInfo } from '@/navigation/types/ObjectPathInfo';
 import { useFilteredObjectMetadataItems } from '@/object-metadata/hooks/useFilteredObjectMetadataItems';
@@ -51,15 +52,23 @@ export const useDefaultHomePagePath = () => {
   );
 
   const firstObjectPathInfo = useMemo<ObjectPathInfo | null>(() => {
-    const [firstObjectMetadataItem] = readableNonSystemObjectMetadataItems;
+    const preferredObjectMetadataItem = isOutboundCrmV1UiMode
+      ? readableNonSystemObjectMetadataItems.find(
+          (item) => item.nameSingular === 'person',
+        )
+      : undefined;
 
-    if (!isDefined(firstObjectMetadataItem)) {
+    const [firstObjectMetadataItem] = readableNonSystemObjectMetadataItems;
+    const fallbackObjectMetadataItem =
+      preferredObjectMetadataItem ?? firstObjectMetadataItem;
+
+    if (!isDefined(fallbackObjectMetadataItem)) {
       return null;
     }
 
-    const view = getFirstView(firstObjectMetadataItem?.id);
+    const view = getFirstView(fallbackObjectMetadataItem.id);
 
-    return { objectMetadataItem: firstObjectMetadataItem, view };
+    return { objectMetadataItem: fallbackObjectMetadataItem, view };
   }, [getFirstView, readableNonSystemObjectMetadataItems]);
 
   const getDefaultObjectPathInfo = useCallback(() => {

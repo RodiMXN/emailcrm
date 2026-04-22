@@ -38,6 +38,15 @@ export class PersonWorkspaceEntity extends BaseWorkspaceEntity {
   linkedinLink: LinksMetadata | null;
   xLink: LinksMetadata | null;
   jobTitle: string | null;
+  currentState: string;
+  nextActionType: string;
+  nextActionDate: Date | null;
+  parkedUntil: Date | null;
+  formStatus: string;
+  crmStatus: string;
+  isSuppressed: boolean;
+  suppressionReason: string | null;
+  sendingMailboxId: string | null;
   /** @deprecated Use `phones` field instead */
   phone: string | null;
   phones: PhonesMetadata;

@@ -1,6 +1,7 @@
 import { currentUserState } from '@/auth/states/currentUserState';
 import { currentUserWorkspaceState } from '@/auth/states/currentUserWorkspaceState';
 import { useDefaultHomePagePath } from '@/navigation/hooks/useDefaultHomePagePath';
+import { lastVisitedObjectMetadataItemIdState } from '@/navigation/states/lastVisitedObjectMetadataItemIdState';
 import { AggregateOperations } from '@/object-record/record-table/constants/AggregateOperations';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 import { jotaiStore } from '@/ui/utilities/state/jotai/jotaiStore';
@@ -25,10 +26,17 @@ const Wrapper = ({ children }: { children: ReactNode }) =>
 const renderHooks = ({
   withCurrentUser,
   withExistingView,
+  lastVisitedObjectMetadataItemId = null,
 }: {
   withCurrentUser: boolean;
   withExistingView: boolean;
+  lastVisitedObjectMetadataItemId?: string | null;
 }) => {
+  jotaiStore.set(
+    lastVisitedObjectMetadataItemIdState.atom,
+    lastVisitedObjectMetadataItemId,
+  );
+
   setTestObjectMetadataItemsInMetadataStore(
     jotaiStore,
     getTestEnrichedObjectMetadataItemsMock(),
@@ -114,13 +122,25 @@ describe('useDefaultHomePagePath', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.defaultHomePagePath).toEqual('/objects/companies');
+      expect(result.current.defaultHomePagePath).toEqual('/objects/people');
     });
   });
   it('should return proper path when currentUser is defined and view exists', async () => {
     const { result } = renderHooks({
       withCurrentUser: true,
       withExistingView: true,
+    });
+
+    await waitFor(() => {
+      expect(result.current.defaultHomePagePath).toEqual('/objects/people');
+    });
+  });
+  it('should preserve last visited behavior when currentUser is defined', async () => {
+    const { result } = renderHooks({
+      withCurrentUser: true,
+      withExistingView: true,
+      lastVisitedObjectMetadataItemId: getMockObjectMetadataItemOrThrow('company')
+        .id,
     });
 
     await waitFor(() => {

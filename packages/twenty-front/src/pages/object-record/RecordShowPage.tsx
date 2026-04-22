@@ -13,8 +13,11 @@ import { PageLayoutRecordPageRenderer } from '@/object-record/record-show/compon
 import { RecordShowPageSSESubscribeEffect } from '@/object-record/record-show/components/RecordShowPageSSESubscribeEffect';
 import { useRecordShowPage } from '@/object-record/record-show/hooks/useRecordShowPage';
 import { computeRecordShowComponentInstanceId } from '@/object-record/record-show/utils/computeRecordShowComponentInstanceId';
+import { PersonOutboundManualActionsDropdown } from '@/people/outbound-actions/components/PersonOutboundManualActionsDropdown';
+import { isOutboundCrmV1UiMode } from '@/app/constants/isOutboundCrmV1UiMode';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import { CoreObjectNameSingular } from 'twenty-shared/types';
 import { RecordShowPageHeader } from '~/pages/object-record/RecordShowPageHeader';
 import { RecordShowPageTitle } from '~/pages/object-record/RecordShowPageTitle';
 
@@ -55,7 +58,14 @@ export const RecordShowPage = () => {
               objectNameSingular={objectNameSingular}
               objectRecordId={objectRecordId}
             >
-              <RecordShowCommandMenu />
+              {isOutboundCrmV1UiMode &&
+                objectNameSingular === CoreObjectNameSingular.Person && (
+                <PersonOutboundManualActionsDropdown recordId={objectRecordId} />
+              )}
+              {(!isOutboundCrmV1UiMode ||
+                objectNameSingular !== CoreObjectNameSingular.Person) && (
+                <RecordShowCommandMenu />
+              )}
               {!isLayoutCustomizationModeEnabled && <SidePanelToggleButton />}
             </RecordShowPageHeader>
             <MainContainerLayoutWithSidePanel>

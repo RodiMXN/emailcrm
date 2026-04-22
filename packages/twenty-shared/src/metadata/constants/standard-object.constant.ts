@@ -2095,6 +2095,33 @@ export const STANDARD_OBJECTS = {
       },
       xLink: { universalIdentifier: '20202020-8fc2-487c-b84a-55a99b145cfd' },
       jobTitle: { universalIdentifier: '20202020-b0d0-415a-bef9-640a26dacd9b' },
+      currentState: {
+        universalIdentifier: '20202020-7e4f-4cb4-8f3e-b74b3c8c1f11',
+      },
+      nextActionType: {
+        universalIdentifier: '20202020-0d23-4e37-99f5-30da2b7142a8',
+      },
+      nextActionDate: {
+        universalIdentifier: '20202020-64cc-4df8-8e1d-2f989e6f3b72',
+      },
+      parkedUntil: {
+        universalIdentifier: '20202020-5a61-42a0-8a7f-38d7f3e9294f',
+      },
+      formStatus: {
+        universalIdentifier: '20202020-a5c8-4f62-9b07-6ab9c1f2d833',
+      },
+      crmStatus: {
+        universalIdentifier: '20202020-b939-4d64-a2e9-05d3ac67e2d4',
+      },
+      isSuppressed: {
+        universalIdentifier: '20202020-281c-4b1b-9a52-4aa4dc56dcd1',
+      },
+      suppressionReason: {
+        universalIdentifier: '20202020-c3f0-4f4e-9d4b-875d2a1cb66a',
+      },
+      sendingMailboxId: {
+        universalIdentifier: '20202020-ec7f-4490-9d8b-98f74fae8ce0',
+      },
       phones: { universalIdentifier: '20202020-0638-448e-8825-439134618022' },
       city: { universalIdentifier: '20202020-5243-4ffb-afc5-2c675da41346' },
       avatarUrl: {
@@ -2181,6 +2208,170 @@ export const STANDARD_OBJECTS = {
           xLink: {
             universalIdentifier: '20202020-af02-4a02-8a02-ae0a1ea11af9',
           },
+          currentState: {
+            universalIdentifier: '20202020-af02-4a02-8a02-ae0a1ea11b00',
+          },
+          nextActionType: {
+            universalIdentifier: '20202020-af02-4a02-8a02-ae0a1ea11b01',
+          },
+          nextActionDate: {
+            universalIdentifier: '20202020-af02-4a02-8a02-ae0a1ea11b02',
+          },
+        },
+      },
+      leadsDueToday: {
+        universalIdentifier: '20202020-a102-4a02-8a02-ae0a1ea11c00',
+        viewFields: {
+          currentState: {
+            universalIdentifier: '20202020-af12-4a02-8a02-ae0a1ea11c01',
+          },
+          nextActionType: {
+            universalIdentifier: '20202020-af12-4a02-8a02-ae0a1ea11c02',
+          },
+          nextActionDate: {
+            universalIdentifier: '20202020-af12-4a02-8a02-ae0a1ea11c03',
+          },
+          isSuppressed: {
+            universalIdentifier: '20202020-af12-4a02-8a02-ae0a1ea11c04',
+          },
+        },
+        viewFilters: {
+          nextActionDateIsNotEmpty: {
+            universalIdentifier: '20202020-af12-4a02-8a02-ae0a1ea11cf1',
+          },
+          nextActionDateIsInPast: {
+            universalIdentifier: '20202020-af12-4a02-8a02-ae0a1ea11cf2',
+          },
+          isSuppressedIsFalse: {
+            universalIdentifier: '20202020-af12-4a02-8a02-ae0a1ea11cf3',
+          },
+        },
+      },
+      waitingForFormCompletion: {
+        universalIdentifier: '20202020-a202-4a02-8a02-ae0a1ea11d00',
+        viewFields: {
+          currentState: {
+            universalIdentifier: '20202020-af22-4a02-8a02-ae0a1ea11d01',
+          },
+          nextActionType: {
+            universalIdentifier: '20202020-af22-4a02-8a02-ae0a1ea11d02',
+          },
+          nextActionDate: {
+            universalIdentifier: '20202020-af22-4a02-8a02-ae0a1ea11d03',
+          },
+          formStatus: {
+            universalIdentifier: '20202020-af22-4a02-8a02-ae0a1ea11d04',
+          },
+          isSuppressed: {
+            universalIdentifier: '20202020-af22-4a02-8a02-ae0a1ea11d05',
+          },
+        },
+        viewFilters: {
+          isSuppressedIsFalse: {
+            universalIdentifier: '20202020-af22-4a02-8a02-ae0a1ea11df1',
+          },
+          formStatusIsNotNotSent: {
+            universalIdentifier: '20202020-af22-4a02-8a02-ae0a1ea11df2',
+          },
+          formStatusIsNotCompleted: {
+            universalIdentifier: '20202020-af22-4a02-8a02-ae0a1ea11df3',
+          },
+          formStatusIsNotAbandoned: {
+            universalIdentifier: '20202020-af22-4a02-8a02-ae0a1ea11df4',
+          },
+        },
+      },
+      suppressedLeads: {
+        universalIdentifier: '20202020-a302-4a02-8a02-ae0a1ea11e00',
+        viewFields: {
+          name: {
+            universalIdentifier: '20202020-af32-4a02-8a02-ae0a1ea11e01',
+          },
+          emails: {
+            universalIdentifier: '20202020-af32-4a02-8a02-ae0a1ea11e02',
+          },
+          company: {
+            universalIdentifier: '20202020-af32-4a02-8a02-ae0a1ea11e03',
+          },
+          currentState: {
+            universalIdentifier: '20202020-af32-4a02-8a02-ae0a1ea11e04',
+          },
+          isSuppressed: {
+            universalIdentifier: '20202020-af32-4a02-8a02-ae0a1ea11e05',
+          },
+          suppressionReason: {
+            universalIdentifier: '20202020-af32-4a02-8a02-ae0a1ea11e06',
+          },
+        },
+        viewFilters: {
+          isSuppressedIsTrue: {
+            universalIdentifier: '20202020-af32-4a02-8a02-ae0a1ea11ef1',
+          },
+        },
+      },
+      readyForCrm: {
+        universalIdentifier: '20202020-a402-4a02-8a02-ae0a1ea11f00',
+        viewFields: {
+          name: {
+            universalIdentifier: '20202020-af42-4a02-8a02-ae0a1ea11f01',
+          },
+          emails: {
+            universalIdentifier: '20202020-af42-4a02-8a02-ae0a1ea11f02',
+          },
+          company: {
+            universalIdentifier: '20202020-af42-4a02-8a02-ae0a1ea11f03',
+          },
+          currentState: {
+            universalIdentifier: '20202020-af42-4a02-8a02-ae0a1ea11f04',
+          },
+          crmStatus: {
+            universalIdentifier: '20202020-af42-4a02-8a02-ae0a1ea11f05',
+          },
+          isSuppressed: {
+            universalIdentifier: '20202020-af42-4a02-8a02-ae0a1ea11f06',
+          },
+        },
+        viewFilters: {
+          crmStatusIsReady: {
+            universalIdentifier: '20202020-af42-4a02-8a02-ae0a1ea11ff1',
+          },
+          isSuppressedIsFalse: {
+            universalIdentifier: '20202020-af42-4a02-8a02-ae0a1ea11ff2',
+          },
+        },
+      },
+      parkedRecycleQueue: {
+        universalIdentifier: '20202020-a502-4a02-8a02-ae0a1ea12000',
+        viewFields: {
+          name: {
+            universalIdentifier: '20202020-af52-4a02-8a02-ae0a1ea12001',
+          },
+          emails: {
+            universalIdentifier: '20202020-af52-4a02-8a02-ae0a1ea12002',
+          },
+          company: {
+            universalIdentifier: '20202020-af52-4a02-8a02-ae0a1ea12003',
+          },
+          currentState: {
+            universalIdentifier: '20202020-af52-4a02-8a02-ae0a1ea12004',
+          },
+          parkedUntil: {
+            universalIdentifier: '20202020-af52-4a02-8a02-ae0a1ea12005',
+          },
+          isSuppressed: {
+            universalIdentifier: '20202020-af52-4a02-8a02-ae0a1ea12006',
+          },
+        },
+        viewFilters: {
+          currentStateIsParked: {
+            universalIdentifier: '20202020-af52-4a02-8a02-ae0a1ea120f1',
+          },
+          parkedUntilIsNotEmpty: {
+            universalIdentifier: '20202020-af52-4a02-8a02-ae0a1ea120f2',
+          },
+          isSuppressedIsFalse: {
+            universalIdentifier: '20202020-af52-4a02-8a02-ae0a1ea120f3',
+          },
         },
       },
       personRecordPageFields: {
@@ -2259,6 +2450,24 @@ export const STANDARD_OBJECTS = {
           },
           timelineActivities: {
             universalIdentifier: '20202020-af02-4a02-8a02-ae0a1ea1221c',
+          },
+          currentState: {
+            universalIdentifier: '20202020-af02-4a02-8a02-ae0a1ea1221d',
+          },
+          nextActionType: {
+            universalIdentifier: '20202020-af02-4a02-8a02-ae0a1ea1221e',
+          },
+          nextActionDate: {
+            universalIdentifier: '20202020-af02-4a02-8a02-ae0a1ea1221f',
+          },
+          formStatus: {
+            universalIdentifier: '20202020-af02-4a02-8a02-ae0a1ea12220',
+          },
+          crmStatus: {
+            universalIdentifier: '20202020-af02-4a02-8a02-ae0a1ea12221',
+          },
+          isSuppressed: {
+            universalIdentifier: '20202020-af02-4a02-8a02-ae0a1ea12222',
           },
         },
       },

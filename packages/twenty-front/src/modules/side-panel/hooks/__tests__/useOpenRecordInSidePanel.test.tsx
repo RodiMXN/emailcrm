@@ -178,7 +178,7 @@ describe('useOpenRecordInSidePanel', () => {
 
     expect(mockNavigateSidePanel).toHaveBeenCalledWith({
       page: SidePanelPages.ViewRecord,
-      pageTitle: 'New Person',
+      pageTitle: 'New Lead',
       pageIcon: result.current.getIcon(personMockObjectMetadataItem.icon),
       pageIconColor: 'currentColor',
       pageId: 'mocked-uuid',

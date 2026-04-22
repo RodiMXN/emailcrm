@@ -4,6 +4,7 @@ import { viewableRecordNameSingularComponentState } from '@/side-panel/pages/rec
 import { sidePanelNavigationMorphItemsByPageState } from '@/side-panel/states/sidePanelNavigationMorphItemsByPageState';
 import { sidePanelNavigationStackState } from '@/side-panel/states/sidePanelNavigationStackState';
 import { MAIN_CONTEXT_STORE_INSTANCE_ID } from '@/context-store/constants/MainContextStoreInstanceId';
+import { isOutboundCrmV1UiMode } from '@/app/constants/isOutboundCrmV1UiMode';
 import { contextStoreCurrentObjectMetadataItemIdComponentState } from '@/context-store/states/contextStoreCurrentObjectMetadataItemIdComponentState';
 import { contextStoreCurrentViewIdComponentState } from '@/context-store/states/contextStoreCurrentViewIdComponentState';
 import { contextStoreCurrentPageTypeComponentState } from '@/context-store/states/contextStoreCurrentPageTypeComponentState';
@@ -174,12 +175,18 @@ export const useOpenRecordInSidePanel = () => {
       );
 
       const objectLabelSingular = objectMetadataItem.labelSingular;
+      const shouldUseLeadTitle =
+        isOutboundCrmV1UiMode &&
+        objectMetadataItem.nameSingular === CoreObjectNameSingular.Person;
 
       navigateSidePanelMenu({
         page: SidePanelPages.ViewRecord,
-        pageTitle: isNewRecord
-          ? t`New ${objectLabelSingular}`
-          : objectLabelSingular,
+        pageTitle:
+          isNewRecord && shouldUseLeadTitle
+            ? t`New Lead`
+            : isNewRecord
+              ? t`New ${objectLabelSingular}`
+              : objectLabelSingular,
         pageIcon: Icon,
         pageIconColor: IconColor,
         pageId: pageComponentInstanceId,
