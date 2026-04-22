@@ -1,6 +1,9 @@
 import { type WorkspaceResolverBuilderMethodNames } from 'src/engine/api/graphql/workspace-resolver-builder/interfaces/workspace-resolvers-builder.interface';
 
-import { getResolverName } from 'src/engine/utils/get-resolver-name.util';
+import {
+  getLegacyResolverName,
+  getResolverName,
+} from 'src/engine/utils/get-resolver-name.util';
 
 describe('getResolverName', () => {
   const metadata = {
@@ -32,5 +35,30 @@ describe('getResolverName', () => {
         unknownType as WorkspaceResolverBuilderMethodNames,
       ),
     ).toThrow(`Unknown resolver type: ${unknownType}`);
+  });
+});
+
+describe('getLegacyResolverName', () => {
+  const metadata = {
+    nameSingular: 'entity',
+    namePlural: 'entities',
+  };
+
+  it('should return createOne-prefixed legacy resolver name for createOne', () => {
+    expect(
+      getLegacyResolverName(
+        metadata,
+        'createOne' as WorkspaceResolverBuilderMethodNames,
+      ),
+    ).toBe('createOneEntity');
+  });
+
+  it('should return null for non-legacy resolver names', () => {
+    expect(
+      getLegacyResolverName(
+        metadata,
+        'findOne' as WorkspaceResolverBuilderMethodNames,
+      ),
+    ).toBeNull();
   });
 });

@@ -16,7 +16,10 @@ import { GraphQLRootTypeFieldConfigMap } from 'src/engine/api/graphql/workspace-
 import { computeObjectMetadataObjectTypeKey } from 'src/engine/api/graphql/workspace-schema-builder/utils/compute-stored-gql-type-key-utils/compute-object-metadata-object-type-key.util';
 import { getResolverArgs } from 'src/engine/api/graphql/workspace-schema-builder/utils/get-resolver-args.util';
 import { type FlatObjectMetadata } from 'src/engine/metadata-modules/flat-object-metadata/types/flat-object-metadata.type';
-import { getResolverName } from 'src/engine/utils/get-resolver-name.util';
+import {
+  getLegacyResolverName,
+  getResolverName,
+} from 'src/engine/utils/get-resolver-name.util';
 
 @Injectable()
 export class RootTypeGenerator {
@@ -123,6 +126,19 @@ export class RootTypeGenerator {
             args: argsType,
             resolve: undefined,
           };
+
+          const legacyResolverName = getLegacyResolverName(
+            objectMetadata,
+            methodName,
+          );
+
+          if (isDefined(legacyResolverName)) {
+            fieldConfigMap[legacyResolverName] = {
+              type: outputType,
+              args: argsType,
+              resolve: undefined,
+            };
+          }
         }
       }
     }

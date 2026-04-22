@@ -15,7 +15,10 @@ import { WorkspaceResolverBuilderService } from 'src/engine/api/graphql/workspac
 import { type FlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/types/flat-entity-maps.type';
 import { type FlatFieldMetadata } from 'src/engine/metadata-modules/flat-field-metadata/types/flat-field-metadata.type';
 import { type FlatObjectMetadata } from 'src/engine/metadata-modules/flat-object-metadata/types/flat-object-metadata.type';
-import { getResolverName } from 'src/engine/utils/get-resolver-name.util';
+import {
+  getLegacyResolverName,
+  getResolverName,
+} from 'src/engine/utils/get-resolver-name.util';
 
 import { CreateManyResolverFactory } from './factories/create-many-resolver.factory';
 import { CreateOneResolverFactory } from './factories/create-one-resolver.factory';
@@ -139,13 +142,25 @@ export class WorkspaceResolverFactory {
             methodName,
           )
         ) {
-          // @ts-expect-error legacy noImplicitAny
-          resolvers.Mutation[resolverName] = resolverFactory.create({
+          const resolver = resolverFactory.create({
             flatObjectMetadata,
             flatObjectMetadataMaps,
             flatFieldMetadataMaps,
             objectIdByNameSingular,
           });
+
+          // @ts-expect-error legacy noImplicitAny
+          resolvers.Mutation[resolverName] = resolver;
+
+          const legacyResolverName = getLegacyResolverName(
+            flatObjectMetadata,
+            methodName,
+          );
+
+          if (isDefined(legacyResolverName)) {
+            // @ts-expect-error legacy noImplicitAny
+            resolvers.Mutation[legacyResolverName] = resolver;
+          }
         }
       }
     }

@@ -52,3 +52,15 @@ export const getResolverName = (
       throw new Error(`Unknown resolver type: ${type}`);
   }
 };
+
+export const getLegacyResolverName = (
+  objectMetadata: Pick<ObjectMetadataEntity, 'namePlural' | 'nameSingular'>,
+  type: WorkspaceResolverBuilderMethodNames,
+) => {
+  switch (type) {
+    case 'createOne':
+      return `createOne${pascalCase(objectMetadata.nameSingular)}`;
+    default:
+      return null;
+  }
+};
