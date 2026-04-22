@@ -68,6 +68,7 @@ import { isDefined } from 'twenty-shared/utils';
 import { getWorkspaceUrl } from '~/utils/getWorkspaceUrl';
 import { isGraphqlErrorOfType } from '~/utils/is-graphql-error-of-type.util';
 import { useStore } from 'jotai';
+import { cookieStorage } from '~/utils/cookie-storage';
 
 export const useAuth = () => {
   const store = useStore();
@@ -153,6 +154,7 @@ export const useAuth = () => {
     store.set(lastAuthenticatedMethodState.atom, lastAuthenticatedMethod);
 
     store.set(tokenPairState.atom, null);
+    cookieStorage.removeItem('tokenPair');
     store.set(currentUserState.atom, null);
     store.set(currentWorkspaceState.atom, null);
     store.set(currentUserWorkspaceState.atom, null);
@@ -182,6 +184,7 @@ export const useAuth = () => {
 
   const handleSetAuthTokens = useCallback(
     (tokens: AuthTokenPair) => {
+      cookieStorage.setItem('tokenPair', JSON.stringify(tokens));
       setTokenPair(tokens);
     },
     [setTokenPair],

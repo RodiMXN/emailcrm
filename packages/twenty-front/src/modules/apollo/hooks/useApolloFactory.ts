@@ -20,6 +20,7 @@ import { isDefined } from 'twenty-shared/utils';
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 import { useUpdateEffect } from '~/hooks/useUpdateEffect';
 import { isMatchingLocation } from '~/utils/isMatchingLocation';
+import { cookieStorage } from '~/utils/cookie-storage';
 
 export const useApolloFactory = (options: Partial<Options> = {}) => {
   // oxlint-disable-next-line twenty/no-state-useref
@@ -65,9 +66,11 @@ export const useApolloFactory = (options: Partial<Options> = {}) => {
       currentTokenPair: tokenPair,
       appVersion,
       onTokenPairChange: (tokenPair) => {
+        cookieStorage.setItem('tokenPair', JSON.stringify(tokenPair));
         setTokenPair(tokenPair);
       },
       onUnauthenticatedError: () => {
+        cookieStorage.removeItem('tokenPair');
         setTokenPair(null);
         setCurrentUser(null);
         setCurrentWorkspaceMember(null);
