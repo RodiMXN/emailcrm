@@ -167,7 +167,12 @@ export class ApolloFactory implements ApolloManager {
         const graphqlUri = `${REACT_APP_SERVER_BASE_URL}/metadata`;
 
         const tokens = await retryWithBackoff(
-          () => renewToken(graphqlUri, getTokenPair()),
+          () =>
+            renewToken(
+              graphqlUri,
+              getTokenPair(),
+              this.currentWorkspace?.id ?? undefined,
+            ),
           {
             maxRetries: TOKEN_RENEWAL_MAX_RETRIES,
             baseDelayMs: TOKEN_RENEWAL_RETRY_DELAY_MS,

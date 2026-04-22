@@ -34,6 +34,20 @@ export class RenewTokenService {
   async generateTokensFromRefreshToken(token: string): Promise<{
     accessOrWorkspaceAgnosticToken: AuthToken;
     refreshToken: AuthToken;
+  }>;
+  async generateTokensFromRefreshToken(
+    token: string,
+    preferredWorkspaceId?: string,
+  ): Promise<{
+    accessOrWorkspaceAgnosticToken: AuthToken;
+    refreshToken: AuthToken;
+  }>;
+  async generateTokensFromRefreshToken(
+    token: string,
+    preferredWorkspaceId?: string,
+  ): Promise<{
+    accessOrWorkspaceAgnosticToken: AuthToken;
+    refreshToken: AuthToken;
   }> {
     if (!token) {
       throw new AuthException(
@@ -74,6 +88,7 @@ export class RenewTokenService {
         workspaceId,
         targetedTokenType,
         userId: user.id,
+        preferredWorkspaceId,
       });
 
     const resolvedAuthProvider = authProvider ?? AuthProviderEnum.Password;
@@ -124,9 +139,14 @@ export class RenewTokenService {
     workspaceId?: string;
     targetedTokenType: JwtTokenTypeEnum;
     userId: string;
+    preferredWorkspaceId?: string;
   }): Promise<string | undefined> {
     if (isDefined(workspaceId)) {
       return workspaceId;
+    }
+
+    if (isDefined(preferredWorkspaceId)) {
+      return preferredWorkspaceId;
     }
 
     if (targetedTokenType !== JwtTokenTypeEnum.WORKSPACE_AGNOSTIC) {
