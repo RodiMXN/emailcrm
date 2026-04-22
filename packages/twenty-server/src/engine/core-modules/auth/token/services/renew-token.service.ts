@@ -14,6 +14,8 @@ import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/
 import { RefreshTokenService } from 'src/engine/core-modules/auth/token/services/refresh-token.service';
 import { WorkspaceAgnosticTokenService } from 'src/engine/core-modules/auth/token/services/workspace-agnostic-token.service';
 import { JwtTokenTypeEnum } from 'src/engine/core-modules/auth/types/auth-context.type';
+import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
+import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { AuthProviderEnum } from 'src/engine/core-modules/workspace/types/workspace.type';
 
 @Injectable()
@@ -24,6 +26,9 @@ export class RenewTokenService {
     private readonly accessTokenService: AccessTokenService,
     private readonly workspaceAgnosticTokenService: WorkspaceAgnosticTokenService,
     private readonly refreshTokenService: RefreshTokenService,
+    @InjectRepository(UserWorkspaceEntity)
+    private readonly userWorkspaceRepository: Repository<UserWorkspaceEntity>,
+    private readonly twentyConfigService: TwentyConfigService,
   ) {}
 
   async generateTokensFromRefreshToken(token: string): Promise<{
@@ -64,33 +69,42 @@ export class RenewTokenService {
     // Support legacy token when targetedTokenType is undefined.
     const targetedTokenType =
       targetedTokenTypeFromPayload ?? JwtTokenTypeEnum.ACCESS;
+    const workspaceIdToIssueAccessTokenFor =
+      await this.resolveWorkspaceIdForAccessToken({
+        workspaceId,
+        targetedTokenType,
+        userId: user.id,
+      });
 
     const resolvedAuthProvider = authProvider ?? AuthProviderEnum.Password;
 
-    const accessToken =
-      isDefined(authProvider) &&
-      targetedTokenType === JwtTokenTypeEnum.WORKSPACE_AGNOSTIC &&
-      !isDefined(workspaceId)
-        ? await this.workspaceAgnosticTokenService.generateWorkspaceAgnosticToken(
-            {
-              userId: user.id,
-              authProvider,
-            },
-          )
-        : await this.accessTokenService.generateAccessToken({
+    const accessToken = !isDefined(workspaceIdToIssueAccessTokenFor)
+      ? await this.workspaceAgnosticTokenService.generateWorkspaceAgnosticToken(
+          {
             userId: user.id,
-            workspaceId: workspaceId as string,
             authProvider: resolvedAuthProvider,
-            isImpersonating,
-            impersonatorUserWorkspaceId,
-            impersonatedUserWorkspaceId,
-          });
+          },
+        )
+      : await this.accessTokenService.generateAccessToken({
+          userId: user.id,
+          workspaceId: workspaceIdToIssueAccessTokenFor,
+          authProvider: resolvedAuthProvider,
+          isImpersonating,
+          impersonatorUserWorkspaceId,
+          impersonatedUserWorkspaceId,
+        });
+
+    const refreshTokenTargetedTokenType = isDefined(
+      workspaceIdToIssueAccessTokenFor,
+    )
+      ? JwtTokenTypeEnum.ACCESS
+      : targetedTokenType;
 
     const refreshToken = await this.refreshTokenService.generateRefreshToken({
       userId: user.id,
-      workspaceId,
+      workspaceId: workspaceIdToIssueAccessTokenFor,
       authProvider: resolvedAuthProvider,
-      targetedTokenType,
+      targetedTokenType: refreshTokenTargetedTokenType,
       isImpersonating,
       impersonatorUserWorkspaceId,
       impersonatedUserWorkspaceId,
@@ -100,5 +114,42 @@ export class RenewTokenService {
       accessOrWorkspaceAgnosticToken: accessToken,
       refreshToken,
     };
+  }
+
+  private async resolveWorkspaceIdForAccessToken({
+    workspaceId,
+    targetedTokenType,
+    userId,
+  }: {
+    workspaceId?: string;
+    targetedTokenType: JwtTokenTypeEnum;
+    userId: string;
+  }): Promise<string | undefined> {
+    if (isDefined(workspaceId)) {
+      return workspaceId;
+    }
+
+    if (targetedTokenType !== JwtTokenTypeEnum.WORKSPACE_AGNOSTIC) {
+      return undefined;
+    }
+
+    if (this.twentyConfigService.get('IS_MULTIWORKSPACE_ENABLED')) {
+      return undefined;
+    }
+
+    const latestUserWorkspace = await this.userWorkspaceRepository.findOne({
+      where: {
+        userId,
+      },
+      order: {
+        createdAt: 'DESC',
+      },
+    });
+
+    if (!isDefined(latestUserWorkspace)) {
+      return undefined;
+    }
+
+    return latestUserWorkspace.workspaceId;
   }
 }
