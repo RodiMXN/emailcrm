@@ -7,7 +7,7 @@ import { getJestMetadataAndApolloMocksWrapper } from '~/testing/jest/getJestMeta
 
 const expectedQueryTemplate = `
   mutation CreateOnePerson($input: PersonCreateInput!) {
-    createOnePerson(data: $input) {
+    createPerson(data: $input) {
       ${PERSON_FRAGMENT_WITH_DEPTH_ONE_RELATIONS}
     }
   }
