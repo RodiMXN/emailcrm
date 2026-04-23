@@ -192,6 +192,21 @@ export function useDirectExecution(
       const { hasIntrospectionFields, hasWorkspaceFields, hasCoreFields } =
         classifyTopLevelFields(document, operationName, workspaceResolverNames);
 
+      if (
+        requestBody.query.includes('people') ||
+        requestBody.query.includes('createPerson') ||
+        requestBody.query.includes('CreateOnePerson') ||
+        requestBody.query.includes('AggregatePeople')
+      ) {
+        // oxlint-disable-next-line no-console
+        console.log('[DirectExecution][WorkspaceRoutingDiag] classification', {
+          operationName,
+          hasIntrospectionFields,
+          hasWorkspaceFields,
+          hasCoreFields,
+        });
+      }
+
       if (hasCoreFields && hasWorkspaceFields) {
         const error = new UserInputError(
           'This query cannot be executed as a single request. Please split it into separate queries.',

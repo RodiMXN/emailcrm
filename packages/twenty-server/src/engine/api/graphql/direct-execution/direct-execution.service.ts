@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import { type MessageDescriptor } from '@lingui/core';
 import { type Request } from 'express';
@@ -81,6 +81,7 @@ type DirectExecutionResult = {
 
 @Injectable()
 export class DirectExecutionService {
+  private readonly logger = new Logger(DirectExecutionService.name);
   private readonly factoryMap: Map<
     string,
     WorkspaceResolverBuilderFactoryInterface
@@ -162,12 +163,54 @@ export class DirectExecutionService {
         'flatObjectMetadataMaps',
       ]);
 
-    const fallbackResolverNameMap = buildResolverNameMap(flatObjectMetadataMaps);
-
-    return new Set([
+    const fallbackResolverNameMap = buildResolverNameMap(
+      flatObjectMetadataMaps,
+    );
+    const workspaceResolverNames = new Set([
       ...Object.keys(graphQLResolverNameMap),
       ...Object.keys(fallbackResolverNameMap),
     ]);
+    const personKeysMatcher =
+      /person|people|createPerson|createOnePerson|aggregatePeople|findManyPeople/i;
+    const interestingKeys = [
+      'people',
+      'createPerson',
+      'createOnePerson',
+      'aggregatePeople',
+      'findManyPeople',
+    ];
+    const personLikeFlatObjects = Object.values(
+      flatObjectMetadataMaps.byUniversalIdentifier,
+    )
+      .filter(isDefined)
+      .filter(
+        (objectMetadata) =>
+          /person|people|lead/i.test(objectMetadata.nameSingular) ||
+          /person|people|lead/i.test(objectMetadata.namePlural),
+      )
+      .map((objectMetadata) => ({
+        universalIdentifier: objectMetadata.universalIdentifier,
+        nameSingular: objectMetadata.nameSingular,
+        namePlural: objectMetadata.namePlural,
+      }));
+
+    this.logger.log(
+      `[DirectExecution][WorkspaceRoutingDiag] workspaceId=${workspaceId} contains=${JSON.stringify(
+        Object.fromEntries(
+          interestingKeys.map((key) => [key, workspaceResolverNames.has(key)]),
+        ),
+      )} graphQLResolverNameMapPersonKeys=${JSON.stringify(
+        Object.keys(graphQLResolverNameMap).filter((key) =>
+          personKeysMatcher.test(key),
+        ),
+      )} fallbackResolverMapPersonKeys=${JSON.stringify(
+        Object.keys(fallbackResolverNameMap).filter((key) =>
+          personKeysMatcher.test(key),
+        ),
+      )} personLikeFlatObjects=${JSON.stringify(personLikeFlatObjects)}`,
+    );
+
+    return workspaceResolverNames;
   }
 
   async execute(
@@ -223,7 +266,9 @@ export class DirectExecutionService {
 
       const { idByNameSingular: objectIdByNameSingular } =
         buildObjectIdByNameMaps(flatObjectMetadataMaps);
-      const fallbackResolverNameMap = buildResolverNameMap(flatObjectMetadataMaps);
+      const fallbackResolverNameMap = buildResolverNameMap(
+        flatObjectMetadataMaps,
+      );
       const effectiveResolverNameMap = {
         ...fallbackResolverNameMap,
         ...graphQLResolverNameMap,
