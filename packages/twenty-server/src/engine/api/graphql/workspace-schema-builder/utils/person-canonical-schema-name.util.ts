@@ -6,10 +6,26 @@ import { type FlatObjectMetadata } from 'src/engine/metadata-modules/flat-object
 import { pascalCase } from 'src/utils/pascal-case';
 
 export const isCanonicalPersonObject = (
-  flatObjectMetadata: Pick<FlatObjectMetadata, 'universalIdentifier'>,
+  flatObjectMetadata: Pick<
+    FlatObjectMetadata,
+    | 'universalIdentifier'
+    | 'nameSingular'
+    | 'namePlural'
+    | 'labelSingular'
+    | 'labelPlural'
+    | 'isCustom'
+    | 'isSystem'
+  >,
 ) =>
   flatObjectMetadata.universalIdentifier ===
-  STANDARD_OBJECTS.person.universalIdentifier;
+    STANDARD_OBJECTS.person.universalIdentifier ||
+  ((!flatObjectMetadata.isCustom || flatObjectMetadata.isSystem) &&
+    (flatObjectMetadata.nameSingular === 'person' ||
+      flatObjectMetadata.namePlural === 'people' ||
+      flatObjectMetadata.labelSingular.toLowerCase() === 'person' ||
+      flatObjectMetadata.labelPlural.toLowerCase() === 'people' ||
+      flatObjectMetadata.labelSingular.toLowerCase() === 'lead' ||
+      flatObjectMetadata.labelPlural.toLowerCase() === 'leads'));
 
 export const getCanonicalPersonResolverName = (
   flatObjectMetadata: Pick<FlatObjectMetadata, 'universalIdentifier'>,

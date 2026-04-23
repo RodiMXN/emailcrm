@@ -9,6 +9,22 @@ import {
 describe('person canonical schema name utils', () => {
   const personObject = {
     universalIdentifier: STANDARD_OBJECTS.person.universalIdentifier,
+    nameSingular: 'person',
+    namePlural: 'people',
+    labelSingular: 'Person',
+    labelPlural: 'People',
+    isCustom: false,
+    isSystem: true,
+  };
+
+  const leadRelabeledSystemObject = {
+    universalIdentifier: '00000000-0000-0000-0000-000000000000',
+    nameSingular: 'lead',
+    namePlural: 'leads',
+    labelSingular: 'Lead',
+    labelPlural: 'Leads',
+    isCustom: false,
+    isSystem: true,
   };
 
   it('should return canonical resolver names for person object', () => {
@@ -33,5 +49,17 @@ describe('person canonical schema name utils', () => {
         GqlInputTypeDefinitionKind.Filter,
       ),
     ).toBe('PersonFilterInput');
+  });
+
+  it('should also treat relabeled system lead object as canonical person object', () => {
+    expect(
+      getCanonicalPersonResolverName(leadRelabeledSystemObject, 'findMany'),
+    ).toBe('people');
+    expect(
+      getCanonicalPersonInputTypeName(
+        leadRelabeledSystemObject,
+        GqlInputTypeDefinitionKind.Create,
+      ),
+    ).toBe('PersonCreateInput');
   });
 });

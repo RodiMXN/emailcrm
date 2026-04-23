@@ -186,12 +186,17 @@ export class DirectExecutionService {
       .filter(
         (objectMetadata) =>
           /person|people|lead/i.test(objectMetadata.nameSingular) ||
-          /person|people|lead/i.test(objectMetadata.namePlural),
+          /person|people|lead/i.test(objectMetadata.namePlural) ||
+          /person|people|lead/i.test(objectMetadata.labelSingular) ||
+          /person|people|lead/i.test(objectMetadata.labelPlural),
       )
       .map((objectMetadata) => ({
+        id: objectMetadata.id,
         universalIdentifier: objectMetadata.universalIdentifier,
         nameSingular: objectMetadata.nameSingular,
         namePlural: objectMetadata.namePlural,
+        isCustom: objectMetadata.isCustom,
+        isSystem: objectMetadata.isSystem,
       }));
 
     this.logger.log(
