@@ -8,6 +8,7 @@ import { ObjectMetadataOrderByBaseGenerator } from 'src/engine/api/graphql/works
 import { GqlTypesStorage } from 'src/engine/api/graphql/workspace-schema-builder/storages/gql-types.storage';
 import { type SchemaGenerationContext } from 'src/engine/api/graphql/workspace-schema-builder/types/schema-generation-context.type';
 import { computeObjectMetadataInputTypeKey } from 'src/engine/api/graphql/workspace-schema-builder/utils/compute-stored-gql-type-key-utils/compute-object-metadata-input-type.util';
+import { getCanonicalPersonInputTypeName } from 'src/engine/api/graphql/workspace-schema-builder/utils/person-canonical-schema-name.util';
 import { type FlatFieldMetadata } from 'src/engine/metadata-modules/flat-field-metadata/types/flat-field-metadata.type';
 import { type FlatObjectMetadata } from 'src/engine/metadata-modules/flat-object-metadata/types/flat-object-metadata.type';
 
@@ -47,5 +48,36 @@ export class ObjectMetadataOrderByGqlInputTypeGenerator {
     );
 
     this.gqlTypesStorage.addGqlType(key, inputType);
+
+    const canonicalPersonInputTypeName = getCanonicalPersonInputTypeName(
+      flatObjectMetadata,
+      GqlInputTypeDefinitionKind.OrderBy,
+    );
+
+    if (
+      canonicalPersonInputTypeName &&
+      canonicalPersonInputTypeName !== inputType.name
+    ) {
+      const canonicalPersonInputType = new GraphQLInputObjectType({
+        name: canonicalPersonInputTypeName,
+        description: flatObjectMetadata.description,
+        fields: () =>
+          this.objectMetadataOrderByBaseGenerator.generateFields({
+            fields,
+            logger: this.logger,
+            context,
+          }),
+      }) as GraphQLInputObjectType;
+
+      const canonicalPersonKey = computeObjectMetadataInputTypeKey(
+        'person',
+        GqlInputTypeDefinitionKind.OrderBy,
+      );
+
+      this.gqlTypesStorage.addGqlType(
+        canonicalPersonKey,
+        canonicalPersonInputType,
+      );
+    }
   }
 }

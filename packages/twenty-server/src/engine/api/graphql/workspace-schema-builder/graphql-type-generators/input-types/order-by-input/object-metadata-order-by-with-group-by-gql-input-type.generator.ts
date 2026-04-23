@@ -20,6 +20,7 @@ import { computeFieldInputTypeOptions } from 'src/engine/api/graphql/workspace-s
 import { computeCompositeFieldInputTypeKey } from 'src/engine/api/graphql/workspace-schema-builder/utils/compute-stored-gql-type-key-utils/compute-composite-field-input-type-key.util';
 import { computeObjectMetadataInputTypeKey } from 'src/engine/api/graphql/workspace-schema-builder/utils/compute-stored-gql-type-key-utils/compute-object-metadata-input-type.util';
 import { getAvailableAggregationsFromObjectFields } from 'src/engine/api/graphql/workspace-schema-builder/utils/get-available-aggregations-from-object-fields.util';
+import { getCanonicalPersonInputTypeName } from 'src/engine/api/graphql/workspace-schema-builder/utils/person-canonical-schema-name.util';
 import { isCompositeFieldMetadataType } from 'src/engine/metadata-modules/field-metadata/utils/is-composite-field-metadata-type.util';
 import { type FlatFieldMetadata } from 'src/engine/metadata-modules/flat-field-metadata/types/flat-field-metadata.type';
 import { isMorphOrRelationFlatFieldMetadata } from 'src/engine/metadata-modules/flat-field-metadata/utils/is-morph-or-relation-flat-field-metadata.util';
@@ -59,6 +60,33 @@ export class ObjectMetadataOrderByWithGroupByGqlInputTypeGenerator {
     );
 
     this.gqlTypesStorage.addGqlType(key, inputType);
+
+    const canonicalPersonInputTypeName = getCanonicalPersonInputTypeName(
+      flatObjectMetadata,
+      GqlInputTypeDefinitionKind.OrderByWithGroupBy,
+    );
+
+    if (
+      isDefined(canonicalPersonInputTypeName) &&
+      canonicalPersonInputTypeName !== inputType.name
+    ) {
+      const canonicalPersonInputType = new GraphQLInputObjectType({
+        name: canonicalPersonInputTypeName,
+        description: flatObjectMetadata.description,
+        fields: () =>
+          this.generateFields(flatObjectMetadata.nameSingular, fields, context),
+      }) as GraphQLInputObjectType;
+
+      const canonicalPersonKey = computeObjectMetadataInputTypeKey(
+        'person',
+        GqlInputTypeDefinitionKind.OrderByWithGroupBy,
+      );
+
+      this.gqlTypesStorage.addGqlType(
+        canonicalPersonKey,
+        canonicalPersonInputType,
+      );
+    }
   }
 
   private generateFields(

@@ -23,6 +23,7 @@ import { computeFieldInputTypeOptions } from 'src/engine/api/graphql/workspace-s
 import { computeCompositeFieldInputTypeKey } from 'src/engine/api/graphql/workspace-schema-builder/utils/compute-stored-gql-type-key-utils/compute-composite-field-input-type-key.util';
 import { computeEnumFieldGqlTypeKey } from 'src/engine/api/graphql/workspace-schema-builder/utils/compute-stored-gql-type-key-utils/compute-enum-field-gql-type-key.util';
 import { computeObjectMetadataInputTypeKey } from 'src/engine/api/graphql/workspace-schema-builder/utils/compute-stored-gql-type-key-utils/compute-object-metadata-input-type.util';
+import { getCanonicalPersonInputTypeName } from 'src/engine/api/graphql/workspace-schema-builder/utils/person-canonical-schema-name.util';
 import { isCompositeFieldMetadataType } from 'src/engine/metadata-modules/field-metadata/utils/is-composite-field-metadata-type.util';
 import { isEnumFieldMetadataType } from 'src/engine/metadata-modules/field-metadata/utils/is-enum-field-metadata-type.util';
 import { type FlatFieldMetadata } from 'src/engine/metadata-modules/flat-field-metadata/types/flat-field-metadata.type';
@@ -58,6 +59,33 @@ export class ObjectMetadataUpdateGqlInputTypeGenerator {
     );
 
     this.gqlTypesStorage.addGqlType(key, inputType);
+
+    const canonicalPersonInputTypeName = getCanonicalPersonInputTypeName(
+      flatObjectMetadata,
+      GqlInputTypeDefinitionKind.Update,
+    );
+
+    if (
+      isDefined(canonicalPersonInputTypeName) &&
+      canonicalPersonInputTypeName !== inputType.name
+    ) {
+      const canonicalPersonInputType = new GraphQLInputObjectType({
+        name: canonicalPersonInputTypeName,
+        description: flatObjectMetadata.description,
+        fields: () =>
+          this.generateFields(flatObjectMetadata.nameSingular, fields),
+      }) as GraphQLInputObjectType;
+
+      const canonicalPersonKey = computeObjectMetadataInputTypeKey(
+        'person',
+        GqlInputTypeDefinitionKind.Update,
+      );
+
+      this.gqlTypesStorage.addGqlType(
+        canonicalPersonKey,
+        canonicalPersonInputType,
+      );
+    }
   }
 
   private generateFields(
