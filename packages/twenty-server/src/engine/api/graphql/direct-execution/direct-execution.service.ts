@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import { type MessageDescriptor } from '@lingui/core';
 import { type Request } from 'express';
@@ -35,7 +35,10 @@ import { assertRestoreManyArgs } from 'src/engine/api/graphql/direct-execution/u
 import { assertRestoreOneArgs } from 'src/engine/api/graphql/direct-execution/utils/assert-restore-one-args.util';
 import { assertUpdateManyArgs } from 'src/engine/api/graphql/direct-execution/utils/assert-update-many-args.util';
 import { assertUpdateOneArgs } from 'src/engine/api/graphql/direct-execution/utils/assert-update-one-args.util';
-import { type ResolverNameMapEntry } from 'src/engine/api/graphql/direct-execution/utils/build-resolver-name-map.util';
+import {
+  type ResolverNameMapEntry,
+  buildResolverNameMap,
+} from 'src/engine/api/graphql/direct-execution/utils/build-resolver-name-map.util';
 import { buildWorkspaceSchemaBuilderContext } from 'src/engine/api/graphql/direct-execution/utils/build-workspace-schema-builder-context.util';
 import { extractArgumentsFromAst } from 'src/engine/api/graphql/direct-execution/utils/extract-arguments-from-ast.util';
 import { graphQLBuildFragmentMap } from 'src/engine/api/graphql/direct-execution/utils/graphql-build-fragment-map.util';
@@ -78,6 +81,7 @@ type DirectExecutionResult = {
 
 @Injectable()
 export class DirectExecutionService {
+  private readonly logger = new Logger(DirectExecutionService.name);
   private readonly factoryMap: Map<
     string,
     WorkspaceResolverBuilderFactoryInterface
@@ -153,12 +157,65 @@ export class DirectExecutionService {
   async getWorkspaceResolverNames(
     workspaceId: string,
   ): Promise<Set<string> | null> {
-    const { graphQLResolverNameMap } =
+    const { graphQLResolverNameMap, flatObjectMetadataMaps } =
       await this.workspaceCacheService.getOrRecompute(workspaceId, [
         'graphQLResolverNameMap',
+        'flatObjectMetadataMaps',
       ]);
 
-    return new Set(Object.keys(graphQLResolverNameMap));
+    const fallbackResolverNameMap = buildResolverNameMap(
+      flatObjectMetadataMaps,
+    );
+    const workspaceResolverNames = new Set([
+      ...Object.keys(graphQLResolverNameMap),
+      ...Object.keys(fallbackResolverNameMap),
+    ]);
+    const personKeysMatcher =
+      /person|people|lead|leads|createPerson|createOnePerson|createLead|createOneLead|aggregatePeople|aggregateLeads|findManyPeople|findManyLeads/i;
+    const interestingKeys = [
+      'people',
+      'createPerson',
+      'createOnePerson',
+      'aggregatePeople',
+      'findManyPeople',
+    ];
+    const personLikeFlatObjects = Object.values(
+      flatObjectMetadataMaps.byUniversalIdentifier,
+    )
+      .filter(isDefined)
+      .filter(
+        (objectMetadata) =>
+          /person|people|lead/i.test(objectMetadata.nameSingular) ||
+          /person|people|lead/i.test(objectMetadata.namePlural) ||
+          /person|people|lead/i.test(objectMetadata.labelSingular) ||
+          /person|people|lead/i.test(objectMetadata.labelPlural),
+      )
+      .map((objectMetadata) => ({
+        id: objectMetadata.id,
+        universalIdentifier: objectMetadata.universalIdentifier,
+        nameSingular: objectMetadata.nameSingular,
+        namePlural: objectMetadata.namePlural,
+        isCustom: objectMetadata.isCustom,
+        isSystem: objectMetadata.isSystem,
+      }));
+
+    this.logger.log(
+      `[DirectExecution][WorkspaceRoutingDiag] workspaceId=${workspaceId} contains=${JSON.stringify(
+        Object.fromEntries(
+          interestingKeys.map((key) => [key, workspaceResolverNames.has(key)]),
+        ),
+      )} graphQLResolverNameMapPersonKeys=${JSON.stringify(
+        Object.keys(graphQLResolverNameMap).filter((key) =>
+          personKeysMatcher.test(key),
+        ),
+      )} fallbackResolverMapPersonKeys=${JSON.stringify(
+        Object.keys(fallbackResolverNameMap).filter((key) =>
+          personKeysMatcher.test(key),
+        ),
+      )} personLikeFlatObjects=${JSON.stringify(personLikeFlatObjects)}`,
+    );
+
+    return workspaceResolverNames;
   }
 
   async execute(
@@ -214,12 +271,19 @@ export class DirectExecutionService {
 
       const { idByNameSingular: objectIdByNameSingular } =
         buildObjectIdByNameMaps(flatObjectMetadataMaps);
+      const fallbackResolverNameMap = buildResolverNameMap(
+        flatObjectMetadataMaps,
+      );
+      const effectiveResolverNameMap = {
+        ...fallbackResolverNameMap,
+        ...graphQLResolverNameMap,
+      };
 
       const errors: GraphQLFormattedError[] = [];
 
       await Promise.all(
         topLevelFields.map(async (field) => {
-          const entry = graphQLResolverNameMap[field.name.value];
+          const entry = effectiveResolverNameMap[field.name.value];
           const responseKey = field.alias?.value ?? field.name.value;
 
           try {

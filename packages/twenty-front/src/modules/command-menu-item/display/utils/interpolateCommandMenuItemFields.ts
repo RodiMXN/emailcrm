@@ -1,11 +1,30 @@
+import { isOutboundCrmV1UiMode } from '@/app/constants/isOutboundCrmV1UiMode';
 import { type CommandMenuContextApi, type Nullable } from 'twenty-shared/types';
 import { interpolateCommandMenuItemTemplate } from 'twenty-shared/utils';
-import { type CommandMenuItemFieldsFragment } from '~/generated-metadata/graphql';
+import {
+  EngineComponentKey,
+  type CommandMenuItemFieldsFragment,
+} from '~/generated-metadata/graphql';
 
 type InterpolatedCommandMenuItemFields = {
   iconKey: Nullable<string>;
   label: string;
   shortLabel: Nullable<string>;
+};
+
+const shouldUseLeadCreateLabels = (
+  item: CommandMenuItemFieldsFragment,
+  commandMenuContextApi: CommandMenuContextApi,
+): boolean => {
+  if (!isOutboundCrmV1UiMode) {
+    return false;
+  }
+
+  if (item.engineComponentKey !== EngineComponentKey.CREATE_NEW_RECORD) {
+    return false;
+  }
+
+  return commandMenuContextApi.objectMetadataItem?.nameSingular === 'person';
 };
 
 export const interpolateCommandMenuItemFields = (
@@ -27,6 +46,14 @@ export const interpolateCommandMenuItemFields = (
     label: item.shortLabel,
     context: commandMenuContextApi,
   });
+
+  if (shouldUseLeadCreateLabels(item, commandMenuContextApi)) {
+    return {
+      iconKey,
+      label: 'Create new lead',
+      shortLabel: 'Add lead',
+    };
+  }
 
   return { iconKey, label, shortLabel };
 };

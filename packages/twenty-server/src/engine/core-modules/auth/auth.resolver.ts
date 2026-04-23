@@ -795,9 +795,24 @@ export class AuthResolver {
 
   @Mutation(() => AuthTokens)
   @UseGuards(PublicEndpointGuard, NoPermissionGuard)
-  async renewToken(@Args() args: AppTokenInput): Promise<AuthTokens> {
+  async renewToken(
+    @Args() args: AppTokenInput,
+    @Context()
+    context: {
+      req?: {
+        headers?: Record<string, string | string[] | undefined>;
+      };
+    },
+  ): Promise<AuthTokens> {
+    const preferredWorkspaceIdFromHeader =
+      context.req?.headers?.['x-workspace-id'];
+    const preferredWorkspaceId = Array.isArray(preferredWorkspaceIdFromHeader)
+      ? preferredWorkspaceIdFromHeader[0]
+      : preferredWorkspaceIdFromHeader;
+
     const tokens = await this.renewTokenService.generateTokensFromRefreshToken(
       args.appToken,
+      preferredWorkspaceId,
     );
 
     return { tokens: tokens };

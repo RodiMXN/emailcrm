@@ -19,6 +19,7 @@ import { GqlTypesStorage } from 'src/engine/api/graphql/workspace-schema-builder
 import { type SchemaGenerationContext } from 'src/engine/api/graphql/workspace-schema-builder/types/schema-generation-context.type';
 import { computeCompositeFieldInputTypeKey } from 'src/engine/api/graphql/workspace-schema-builder/utils/compute-stored-gql-type-key-utils/compute-composite-field-input-type-key.util';
 import { computeObjectMetadataInputTypeKey } from 'src/engine/api/graphql/workspace-schema-builder/utils/compute-stored-gql-type-key-utils/compute-object-metadata-input-type.util';
+import { getCanonicalPersonInputTypeName } from 'src/engine/api/graphql/workspace-schema-builder/utils/person-canonical-schema-name.util';
 import { isCompositeFieldMetadataType } from 'src/engine/metadata-modules/field-metadata/utils/is-composite-field-metadata-type.util';
 import { isFlatFieldMetadataSupportedInGroupBy } from 'src/engine/metadata-modules/field-metadata/utils/is-supported-in-group-by.util';
 import { type FlatFieldMetadata } from 'src/engine/metadata-modules/flat-field-metadata/types/flat-field-metadata.type';
@@ -54,6 +55,32 @@ export class ObjectMetadataGroupByGqlInputTypeGenerator {
     );
 
     this.gqlTypesStorage.addGqlType(key, inputType);
+
+    const canonicalPersonInputTypeName = getCanonicalPersonInputTypeName(
+      flatObjectMetadata,
+      GqlInputTypeDefinitionKind.GroupBy,
+    );
+
+    if (
+      isDefined(canonicalPersonInputTypeName) &&
+      canonicalPersonInputTypeName !== inputType.name
+    ) {
+      const canonicalPersonInputType = new GraphQLInputObjectType({
+        name: canonicalPersonInputTypeName,
+        description: flatObjectMetadata.description,
+        fields: () => this.generateFields(fields, context),
+      }) as GraphQLInputObjectType;
+
+      const canonicalPersonKey = computeObjectMetadataInputTypeKey(
+        'person',
+        GqlInputTypeDefinitionKind.GroupBy,
+      );
+
+      this.gqlTypesStorage.addGqlType(
+        canonicalPersonKey,
+        canonicalPersonInputType,
+      );
+    }
   }
 
   private generateFields(

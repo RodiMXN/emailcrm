@@ -4,7 +4,11 @@ import { workspaceResolverBuilderMethodNames } from 'src/engine/api/graphql/work
 import { type WorkspaceResolverBuilderMethodNames } from 'src/engine/api/graphql/workspace-resolver-builder/interfaces/workspace-resolvers-builder.interface';
 import { type FlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/types/flat-entity-maps.type';
 import { type FlatObjectMetadata } from 'src/engine/metadata-modules/flat-object-metadata/types/flat-object-metadata.type';
-import { getResolverName } from 'src/engine/utils/get-resolver-name.util';
+import { getCanonicalPersonResolverName } from 'src/engine/api/graphql/workspace-schema-builder/utils/person-canonical-schema-name.util';
+import {
+  getLegacyResolverName,
+  getResolverName,
+} from 'src/engine/utils/get-resolver-name.util';
 
 export type ResolverNameMapEntry = {
   objectMetadataUniversalIdentifier: string;
@@ -40,6 +44,34 @@ export const buildResolverNameMap = (
         method,
         operationType,
       };
+
+      const legacyResolverName = getLegacyResolverName(
+        flatObjectMetadata,
+        method,
+      );
+
+      if (isDefined(legacyResolverName)) {
+        map[legacyResolverName] = {
+          objectMetadataUniversalIdentifier:
+            flatObjectMetadata.universalIdentifier,
+          method,
+          operationType,
+        };
+      }
+
+      const canonicalPersonResolverName = getCanonicalPersonResolverName(
+        flatObjectMetadata,
+        method,
+      );
+
+      if (isDefined(canonicalPersonResolverName)) {
+        map[canonicalPersonResolverName] = {
+          objectMetadataUniversalIdentifier:
+            flatObjectMetadata.universalIdentifier,
+          method,
+          operationType,
+        };
+      }
     }
   }
 

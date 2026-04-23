@@ -21,12 +21,22 @@ const logger = loggerLink(() => 'Twenty-Refresh');
 const renewTokenMutation = async (
   uri: string | undefined,
   refreshToken: string,
+  workspaceId?: string,
 ) => {
   const httpLink = new HttpLink({ uri });
 
   const client = new ApolloClient({
     link: ApolloLink.from([...(isDebugMode ? [logger] : []), httpLink]),
     cache: new InMemoryCache({}),
+    ...(workspaceId
+      ? {
+          defaultContext: {
+            headers: {
+              'x-workspace-id': workspaceId,
+            },
+          },
+        }
+      : {}),
   });
 
   const result = await client.mutate<
@@ -50,12 +60,17 @@ const renewTokenMutation = async (
 export const renewToken = async (
   uri: string | undefined,
   tokenPair: AuthTokenPair | undefined | null,
+  workspaceId?: string,
 ) => {
   if (!tokenPair) {
     throw new Error('Refresh token is not defined');
   }
 
-  const data = await renewTokenMutation(uri, tokenPair.refreshToken.token);
+  const data = await renewTokenMutation(
+    uri,
+    tokenPair.refreshToken.token,
+    workspaceId,
+  );
 
   return data?.renewToken.tokens;
 };

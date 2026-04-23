@@ -26,6 +26,7 @@ import { clearSessionLocalStorageKeys } from '@/auth/utils/clearSessionLocalStor
 import { broadcastSignOutToOtherTabs } from '@/auth/utils/crossTabSignOut';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
+import { setInMemoryTokenPair } from '@/apollo/utils/getTokenPair';
 
 import { isAppEffectRedirectEnabledState } from '@/app/states/isAppEffectRedirectEnabledState';
 import { availableWorkspacesState } from '@/auth/states/availableWorkspacesState';
@@ -68,6 +69,7 @@ import { isDefined } from 'twenty-shared/utils';
 import { getWorkspaceUrl } from '~/utils/getWorkspaceUrl';
 import { isGraphqlErrorOfType } from '~/utils/is-graphql-error-of-type.util';
 import { useStore } from 'jotai';
+import { cookieStorage } from '~/utils/cookie-storage';
 
 export const useAuth = () => {
   const store = useStore();
@@ -153,6 +155,13 @@ export const useAuth = () => {
     store.set(lastAuthenticatedMethodState.atom, lastAuthenticatedMethod);
 
     store.set(tokenPairState.atom, null);
+    setInMemoryTokenPair(undefined);
+    cookieStorage.removeItem('tokenPair');
+    try {
+      localStorage.removeItem('tokenPair');
+    } catch {
+      // ignore localStorage cleanup errors
+    }
     store.set(currentUserState.atom, null);
     store.set(currentWorkspaceState.atom, null);
     store.set(currentUserWorkspaceState.atom, null);
@@ -182,6 +191,13 @@ export const useAuth = () => {
 
   const handleSetAuthTokens = useCallback(
     (tokens: AuthTokenPair) => {
+      setInMemoryTokenPair(tokens);
+      cookieStorage.setItem('tokenPair', JSON.stringify(tokens));
+      try {
+        localStorage.setItem('tokenPair', JSON.stringify(tokens));
+      } catch {
+        // ignore localStorage persistence errors
+      }
       setTokenPair(tokens);
     },
     [setTokenPair],
@@ -382,15 +398,35 @@ export const useAuth = () => {
             const targetWorkspace = getFirstAvailableWorkspaces(
               user.availableWorkspaces,
             );
-            return await redirectToWorkspaceDomain(
-              getWorkspaceUrl(targetWorkspace.workspaceUrls),
-              targetWorkspace.loginToken ? AppPath.Verify : AppPath.SignInUp,
-              {
-                ...(targetWorkspace.loginToken && {
-                  loginToken: targetWorkspace.loginToken,
-                }),
-                email: user.email,
-              },
+
+            if (isMultiWorkspaceEnabled) {
+              return await redirectToWorkspaceDomain(
+                getWorkspaceUrl(targetWorkspace.workspaceUrls),
+                targetWorkspace.loginToken ? AppPath.Verify : AppPath.SignInUp,
+                {
+                  ...(targetWorkspace.loginToken && {
+                    loginToken: targetWorkspace.loginToken,
+                  }),
+                  email: user.email,
+                },
+              );
+            }
+
+            if (isDefined(targetWorkspace.loginToken)) {
+              return await handleGetAuthTokensFromLoginToken(
+                targetWorkspace.loginToken,
+              );
+            }
+
+            const fallbackLoginTokenResult =
+              await handleGetLoginTokenFromCredentials(
+                email,
+                password,
+                captchaToken,
+              );
+
+            return await handleGetAuthTokensFromLoginToken(
+              fallbackLoginTokenResult.loginToken.token,
             );
           }
 
@@ -411,6 +447,8 @@ export const useAuth = () => {
       redirectToWorkspaceDomain,
       signIn,
       loadCurrentUser,
+      isMultiWorkspaceEnabled,
+      handleGetAuthTokensFromLoginToken,
       setSearchParams,
       setSignInUpStep,
       createWorkspace,

@@ -1,9 +1,9 @@
 import * as Sentry from '@sentry/node';
 import { type Request } from 'express';
-import { DocumentNode, parse } from 'graphql';
+import { DocumentNode, GraphQLError, parse } from 'graphql';
 import { type Plugin } from 'graphql-yoga';
 
-import { isNull } from '@sniptt/guards';
+import { isNonEmptyString, isNull } from '@sniptt/guards';
 import { type DirectExecutionService } from 'src/engine/api/graphql/direct-execution/direct-execution.service';
 import { classifyTopLevelFields } from 'src/engine/api/graphql/direct-execution/utils/classify-top-level-fields.util';
 import { findOperationDefinition } from 'src/engine/api/graphql/direct-execution/utils/find-operation-definition.util';
@@ -20,15 +20,146 @@ export function useDirectExecution(
   config: DirectExecutionPluginConfig,
 ): Plugin {
   return {
-    onRequest: async ({ endResponse, serverContext }) => {
+    onRequest: async ({ endResponse, serverContext, request }) => {
       const req = (serverContext as unknown as { req: Request }).req;
 
-      if (!req.workspace?.id || !req.body?.query) {
+      const readRequestBodyFromRawString = (
+        rawBody: string,
+      ):
+        | {
+            query?: string;
+            operationName?: string;
+            variables?: Record<string, unknown>;
+          }
+        | undefined => {
+        if (!isNonEmptyString(rawBody)) {
+          return undefined;
+        }
+
+        const trimmedRawBody = rawBody.trim();
+
+        try {
+          const parsedJsonBody = JSON.parse(trimmedRawBody) as {
+            query?: string;
+            operationName?: string;
+            variables?: Record<string, unknown>;
+          };
+
+          if (isNonEmptyString(parsedJsonBody?.query)) {
+            return parsedJsonBody;
+          }
+        } catch {
+          // The raw body is not JSON. Continue with other parsing strategies.
+        }
+
+        const searchParams = new URLSearchParams(trimmedRawBody);
+        const queryFromUrlEncodedBody = searchParams.get('query');
+
+        if (isNonEmptyString(queryFromUrlEncodedBody)) {
+          const operationNameFromUrlEncodedBody =
+            searchParams.get('operationName');
+
+          return {
+            query: queryFromUrlEncodedBody,
+            operationName: operationNameFromUrlEncodedBody ?? undefined,
+          };
+        }
+
+        return {
+          query: trimmedRawBody,
+        };
+      };
+
+      let requestBody = req.body as
+        | {
+            query?: string;
+            operationName?: string;
+            variables?: Record<string, unknown>;
+          }
+        | undefined;
+
+      if (!isNonEmptyString(requestBody?.query) && isNonEmptyString(req.body)) {
+        requestBody = readRequestBodyFromRawString(req.body);
+        req.body = requestBody;
+      }
+
+      if (!isNonEmptyString(requestBody?.query)) {
+        try {
+          const parsedBody = (await request.clone().json()) as
+            | {
+                query?: string;
+                operationName?: string;
+                variables?: Record<string, unknown>;
+              }
+            | undefined;
+
+          if (isNonEmptyString(parsedBody?.query)) {
+            requestBody = parsedBody;
+            req.body = parsedBody;
+          }
+        } catch {
+          try {
+            const parsedRawBody = readRequestBodyFromRawString(
+              await request.clone().text(),
+            );
+
+            if (isNonEmptyString(parsedRawBody?.query)) {
+              requestBody = parsedRawBody;
+              req.body = parsedRawBody;
+            }
+          } catch {
+            // Keep legacy behavior when body is not a parseable GraphQL payload.
+          }
+        }
+      }
+
+      if (!isNonEmptyString(requestBody?.query)) {
+        const queryFromSearchParams = new URL(request.url).searchParams.get(
+          'query',
+        );
+        const operationNameFromSearchParams = new URL(
+          request.url,
+        ).searchParams.get('operationName');
+
+        if (isNonEmptyString(queryFromSearchParams)) {
+          requestBody = {
+            query: queryFromSearchParams,
+            operationName: operationNameFromSearchParams ?? undefined,
+          };
+          req.body = requestBody;
+        }
+      }
+
+      if (!isNonEmptyString(requestBody?.query)) {
         return;
       }
 
-      const queryString = req.body.query as string;
-      const operationName = req.body.operationName as string | undefined;
+      const hasWorkspaceIntentHeader = isNonEmptyString(
+        req.headers['x-schema-version'] as string | undefined,
+      );
+      const hasAuthorizationHeader = isNonEmptyString(
+        req.headers.authorization,
+      );
+
+      if (
+        !req.workspace?.id &&
+        (hasWorkspaceIntentHeader || hasAuthorizationHeader)
+      ) {
+        const error = new GraphQLError('Workspace context is missing', {
+          extensions: {
+            code: 'UNAUTHENTICATED',
+          },
+        });
+
+        return endResponse(Response.json({ errors: [error.toJSON()] }));
+      }
+
+      if (!req.workspace?.id) {
+        return;
+      }
+
+      const queryString = requestBody.query;
+      const operationName = requestBody.operationName;
 
       let document: DocumentNode;
       try {
@@ -60,6 +191,21 @@ export function useDirectExecution(
 
       const { hasIntrospectionFields, hasWorkspaceFields, hasCoreFields } =
         classifyTopLevelFields(document, operationName, workspaceResolverNames);
+
+      if (
+        requestBody.query.includes('people') ||
+        requestBody.query.includes('createPerson') ||
+        requestBody.query.includes('CreateOnePerson') ||
+        requestBody.query.includes('AggregatePeople')
+      ) {
+        // oxlint-disable-next-line no-console
+        console.log('[DirectExecution][WorkspaceRoutingDiag] classification', {
+          operationName,
+          hasIntrospectionFields,
+          hasWorkspaceFields,
+          hasCoreFields,
+        });
+      }
 
       if (hasCoreFields && hasWorkspaceFields) {
         const error = new UserInputError(

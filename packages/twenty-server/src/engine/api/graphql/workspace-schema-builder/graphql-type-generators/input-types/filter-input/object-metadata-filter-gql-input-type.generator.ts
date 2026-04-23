@@ -18,6 +18,7 @@ import { computeFieldInputTypeOptions } from 'src/engine/api/graphql/workspace-s
 import { computeCompositeFieldInputTypeKey } from 'src/engine/api/graphql/workspace-schema-builder/utils/compute-stored-gql-type-key-utils/compute-composite-field-input-type-key.util';
 import { computeEnumFieldGqlTypeKey } from 'src/engine/api/graphql/workspace-schema-builder/utils/compute-stored-gql-type-key-utils/compute-enum-field-gql-type-key.util';
 import { computeObjectMetadataInputTypeKey } from 'src/engine/api/graphql/workspace-schema-builder/utils/compute-stored-gql-type-key-utils/compute-object-metadata-input-type.util';
+import { getCanonicalPersonInputTypeName } from 'src/engine/api/graphql/workspace-schema-builder/utils/person-canonical-schema-name.util';
 import { createGqlEnumFilterType } from 'src/engine/api/graphql/workspace-schema-builder/utils/create-gql-enum-filter-type.util';
 import { isCompositeFieldMetadataType } from 'src/engine/metadata-modules/field-metadata/utils/is-composite-field-metadata-type.util';
 import { isEnumFieldMetadataType } from 'src/engine/metadata-modules/field-metadata/utils/is-enum-field-metadata-type.util';
@@ -40,12 +41,14 @@ export class ObjectMetadataFilterGqlInputTypeGenerator {
     flatObjectMetadata: FlatObjectMetadata,
     fields: FlatFieldMetadata[],
   ) {
-    const inputType = new GraphQLInputObjectType({
+    let inputType: GraphQLInputObjectType;
+
+    inputType = new GraphQLInputObjectType({
       name: `${pascalCase(flatObjectMetadata.nameSingular)}${GqlInputTypeDefinitionKind.Filter.toString()}Input`,
       description: flatObjectMetadata.description,
       fields: () =>
         this.generateFields(flatObjectMetadata.nameSingular, fields, inputType),
-    }) as GraphQLInputObjectType;
+    });
 
     const key = computeObjectMetadataInputTypeKey(
       flatObjectMetadata.nameSingular,
@@ -53,6 +56,39 @@ export class ObjectMetadataFilterGqlInputTypeGenerator {
     );
 
     this.gqlTypesStorage.addGqlType(key, inputType);
+
+    const canonicalPersonInputTypeName = getCanonicalPersonInputTypeName(
+      flatObjectMetadata,
+      GqlInputTypeDefinitionKind.Filter,
+    );
+
+    if (
+      isDefined(canonicalPersonInputTypeName) &&
+      canonicalPersonInputTypeName !== inputType.name
+    ) {
+      let canonicalPersonInputType: GraphQLInputObjectType;
+
+      canonicalPersonInputType = new GraphQLInputObjectType({
+        name: canonicalPersonInputTypeName,
+        description: flatObjectMetadata.description,
+        fields: () =>
+          this.generateFields(
+            flatObjectMetadata.nameSingular,
+            fields,
+            canonicalPersonInputType,
+          ),
+      });
+
+      const canonicalPersonKey = computeObjectMetadataInputTypeKey(
+        'person',
+        GqlInputTypeDefinitionKind.Filter,
+      );
+
+      this.gqlTypesStorage.addGqlType(
+        canonicalPersonKey,
+        canonicalPersonInputType,
+      );
+    }
   }
 
   private generateFields(

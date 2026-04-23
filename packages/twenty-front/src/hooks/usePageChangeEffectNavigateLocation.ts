@@ -1,4 +1,5 @@
 import { verifyEmailRedirectPathState } from '@/app/states/verifyEmailRedirectPathState';
+import { isOutboundCrmV1UiMode } from '@/app/constants/isOutboundCrmV1UiMode';
 import { ONBOARDING_PATHS } from '@/auth/constants/OnboardingPaths';
 import { ONGOING_USER_CREATION_PATHS } from '@/auth/constants/OngoingUserCreationPaths';
 import { useHasAccessTokenPair } from '@/auth/hooks/useHasAccessTokenPair';
@@ -15,7 +16,7 @@ import { useQuery } from '@apollo/client/react';
 import { isNonEmptyString } from '@sniptt/guards';
 import { useLocation, useParams } from 'react-router-dom';
 import { AppPath, SettingsPath } from 'twenty-shared/types';
-import { isDefined } from 'twenty-shared/utils';
+import { getAppPath, isDefined } from 'twenty-shared/utils';
 import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
 import {
   FindOnePageLayoutTypeDocument,
@@ -29,6 +30,18 @@ const readReturnToPathFromUrlSearchParams = (): string | null => {
 
   return value && isValidReturnToPath(value) ? value : null;
 };
+
+const isGenericCompaniesIndexPath = (path: string | null): boolean => {
+  if (!isOutboundCrmV1UiMode || !isNonEmptyString(path)) {
+    return false;
+  }
+
+  return /^\/objects\/companies(?:[?#].*)?$/.test(path);
+};
+
+const OUTBOUND_CRM_V1_PEOPLE_PATH = getAppPath(AppPath.RecordIndexPage, {
+  objectNamePlural: 'people',
+});
 
 export const usePageChangeEffectNavigateLocation = () => {
   const hasAccessTokenPair = useHasAccessTokenPair();
@@ -73,6 +86,12 @@ export const usePageChangeEffectNavigateLocation = () => {
   const resolvedReturnToPath = isNonEmptyString(returnToPath)
     ? returnToPath
     : readReturnToPathFromUrlSearchParams();
+  const preferredReturnToPath = isGenericCompaniesIndexPath(resolvedReturnToPath)
+    ? null
+    : resolvedReturnToPath;
+  const preferredDefaultHomePagePath = isOutboundCrmV1UiMode
+    ? OUTBOUND_CRM_V1_PEOPLE_PATH
+    : defaultHomePagePath;
 
   if (
     (!hasAccessTokenPair || (hasAccessTokenPair && !isOnAWorkspace)) &&
@@ -164,11 +183,11 @@ export const usePageChangeEffectNavigateLocation = () => {
     hasAccessTokenPair &&
     isOnAWorkspace
   ) {
-    return resolvedReturnToPath ?? defaultHomePagePath;
+    return preferredReturnToPath ?? preferredDefaultHomePagePath;
   }
 
   if (isMatchingLocation(location, AppPath.Index) && hasAccessTokenPair) {
-    return resolvedReturnToPath ?? defaultHomePagePath;
+    return preferredReturnToPath ?? preferredDefaultHomePagePath;
   }
 
   if (

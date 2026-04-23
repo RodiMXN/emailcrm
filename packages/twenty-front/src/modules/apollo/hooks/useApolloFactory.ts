@@ -3,6 +3,7 @@ import { useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { ApolloFactory, type Options } from '@/apollo/services/apollo.factory';
+import { setInMemoryTokenPair } from '@/apollo/utils/getTokenPair';
 import { currentUserState } from '@/auth/states/currentUserState';
 import { currentUserWorkspaceState } from '@/auth/states/currentUserWorkspaceState';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
@@ -20,6 +21,7 @@ import { isDefined } from 'twenty-shared/utils';
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 import { useUpdateEffect } from '~/hooks/useUpdateEffect';
 import { isMatchingLocation } from '~/utils/isMatchingLocation';
+import { cookieStorage } from '~/utils/cookie-storage';
 
 export const useApolloFactory = (options: Partial<Options> = {}) => {
   // oxlint-disable-next-line twenty/no-state-useref
@@ -27,6 +29,7 @@ export const useApolloFactory = (options: Partial<Options> = {}) => {
 
   const navigate = useNavigate();
   const setTokenPair = useSetAtomState(tokenPairState);
+  const tokenPair = useAtomStateValue(tokenPairState);
   const [currentWorkspace, setCurrentWorkspace] = useAtomState(
     currentWorkspaceState,
   );
@@ -61,11 +64,26 @@ export const useApolloFactory = (options: Partial<Options> = {}) => {
       devtools: { enabled: process.env.IS_DEBUG_MODE === 'true' },
       currentWorkspaceMember: currentWorkspaceMember,
       currentWorkspace: currentWorkspace,
+      currentTokenPair: tokenPair,
       appVersion,
       onTokenPairChange: (tokenPair) => {
+        setInMemoryTokenPair(tokenPair);
+        cookieStorage.setItem('tokenPair', JSON.stringify(tokenPair));
+        try {
+          localStorage.setItem('tokenPair', JSON.stringify(tokenPair));
+        } catch {
+          // ignore localStorage persistence errors
+        }
         setTokenPair(tokenPair);
       },
       onUnauthenticatedError: () => {
+        setInMemoryTokenPair(undefined);
+        cookieStorage.removeItem('tokenPair');
+        try {
+          localStorage.removeItem('tokenPair');
+        } catch {
+          // ignore localStorage cleanup errors
+        }
         setTokenPair(null);
         setCurrentUser(null);
         setCurrentWorkspaceMember(null);
@@ -110,10 +128,17 @@ export const useApolloFactory = (options: Partial<Options> = {}) => {
     return apolloRef.current.getClient();
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [
+    tokenPair,
+    currentWorkspace,
+    currentWorkspaceMember,
+    appVersion,
+    navigate,
+    location,
     setTokenPair,
     setCurrentUser,
     setCurrentWorkspaceMember,
     setCurrentWorkspace,
+    setCurrentUserWorkspace,
     setReturnToPath,
     enqueueErrorSnackBar,
   ]);
@@ -135,6 +160,14 @@ export const useApolloFactory = (options: Partial<Options> = {}) => {
       apolloRef.current.updateAppVersion(appVersion);
     }
   }, [appVersion]);
+
+  useUpdateEffect(() => {
+    if (isDefined(apolloRef.current)) {
+      apolloRef.current.updateTokenPair(tokenPair);
+    }
+
+    setInMemoryTokenPair(tokenPair);
+  }, [tokenPair]);
 
   return apolloClient;
 };
