@@ -171,7 +171,7 @@ export class DirectExecutionService {
       ...Object.keys(fallbackResolverNameMap),
     ]);
     const personKeysMatcher =
-      /person|people|createPerson|createOnePerson|aggregatePeople|findManyPeople/i;
+      /person|people|lead|leads|createPerson|createOnePerson|createLead|createOneLead|aggregatePeople|aggregateLeads|findManyPeople|findManyLeads/i;
     const interestingKeys = [
       'people',
       'createPerson',
