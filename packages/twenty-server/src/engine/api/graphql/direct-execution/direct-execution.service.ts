@@ -35,7 +35,10 @@ import { assertRestoreManyArgs } from 'src/engine/api/graphql/direct-execution/u
 import { assertRestoreOneArgs } from 'src/engine/api/graphql/direct-execution/utils/assert-restore-one-args.util';
 import { assertUpdateManyArgs } from 'src/engine/api/graphql/direct-execution/utils/assert-update-many-args.util';
 import { assertUpdateOneArgs } from 'src/engine/api/graphql/direct-execution/utils/assert-update-one-args.util';
-import { type ResolverNameMapEntry } from 'src/engine/api/graphql/direct-execution/utils/build-resolver-name-map.util';
+import {
+  type ResolverNameMapEntry,
+  buildResolverNameMap,
+} from 'src/engine/api/graphql/direct-execution/utils/build-resolver-name-map.util';
 import { buildWorkspaceSchemaBuilderContext } from 'src/engine/api/graphql/direct-execution/utils/build-workspace-schema-builder-context.util';
 import { extractArgumentsFromAst } from 'src/engine/api/graphql/direct-execution/utils/extract-arguments-from-ast.util';
 import { graphQLBuildFragmentMap } from 'src/engine/api/graphql/direct-execution/utils/graphql-build-fragment-map.util';
@@ -153,12 +156,18 @@ export class DirectExecutionService {
   async getWorkspaceResolverNames(
     workspaceId: string,
   ): Promise<Set<string> | null> {
-    const { graphQLResolverNameMap } =
+    const { graphQLResolverNameMap, flatObjectMetadataMaps } =
       await this.workspaceCacheService.getOrRecompute(workspaceId, [
         'graphQLResolverNameMap',
+        'flatObjectMetadataMaps',
       ]);
 
-    return new Set(Object.keys(graphQLResolverNameMap));
+    const fallbackResolverNameMap = buildResolverNameMap(flatObjectMetadataMaps);
+
+    return new Set([
+      ...Object.keys(graphQLResolverNameMap),
+      ...Object.keys(fallbackResolverNameMap),
+    ]);
   }
 
   async execute(
@@ -214,12 +223,17 @@ export class DirectExecutionService {
 
       const { idByNameSingular: objectIdByNameSingular } =
         buildObjectIdByNameMaps(flatObjectMetadataMaps);
+      const fallbackResolverNameMap = buildResolverNameMap(flatObjectMetadataMaps);
+      const effectiveResolverNameMap = {
+        ...fallbackResolverNameMap,
+        ...graphQLResolverNameMap,
+      };
 
       const errors: GraphQLFormattedError[] = [];
 
       await Promise.all(
         topLevelFields.map(async (field) => {
-          const entry = graphQLResolverNameMap[field.name.value];
+          const entry = effectiveResolverNameMap[field.name.value];
           const responseKey = field.alias?.value ?? field.name.value;
 
           try {
