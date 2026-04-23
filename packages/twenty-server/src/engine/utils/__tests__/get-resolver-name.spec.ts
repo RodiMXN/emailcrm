@@ -53,6 +53,15 @@ describe('getLegacyResolverName', () => {
     ).toBe('createOneEntity');
   });
 
+  it('should return aggregate-prefixed legacy resolver name for groupBy', () => {
+    expect(
+      getLegacyResolverName(
+        metadata,
+        'groupBy' as WorkspaceResolverBuilderMethodNames,
+      ),
+    ).toBe('aggregateEntities');
+  });
+
   it('should return null for non-legacy resolver names', () => {
     expect(
       getLegacyResolverName(

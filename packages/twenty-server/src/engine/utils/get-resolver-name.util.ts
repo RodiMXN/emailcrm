@@ -60,6 +60,8 @@ export const getLegacyResolverName = (
   switch (type) {
     case 'createOne':
       return `createOne${pascalCase(objectMetadata.nameSingular)}`;
+    case 'groupBy':
+      return `aggregate${pascalCase(objectMetadata.namePlural)}`;
     default:
       return null;
   }
