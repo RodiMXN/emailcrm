@@ -55,7 +55,7 @@ export const WORKSPACE_CACHE_KEYS_V2 = {
   flatWorkspaceMemberMaps: 'flat-maps:workspace-member',
   apiKeyMap: 'cache:api-key-map',
   applicationVariableMaps: 'cache:application-variable',
-  graphQLResolverNameMap: 'direct-execution:graphql-resolver-name-map',
+  graphQLResolverNameMap: 'direct-execution:graphql-resolver-name-map:v2',
 } as const satisfies Record<WorkspaceCacheKeyName, string>;
 
 export type AdditionalCacheDataMaps = {
